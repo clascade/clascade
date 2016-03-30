@@ -291,7 +291,7 @@ class Diff
 		
 		for ($i = 0; $i < $lines_after; ++$i)
 		{
-			$hunk->context_after[] = $this->old_data[$old_start - $lines_before];
+			$hunk->context_after[] = $this->old_data[$old_end + $i];
 		}
 		
 		return $hunk;
