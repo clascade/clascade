@@ -38,6 +38,7 @@ class CoreProvider
 		$this->initEnvironment();
 		$this->initAutoload();
 		$this->checkEnvironment();
+		$this->initDefs();
 	}
 	
 	public function initFunctions ()
@@ -79,6 +80,19 @@ class CoreProvider
 		if (ini_get('mbstring.func_overload') & 2 !== 0)
 		{
 			throw new Exception\ConfigurationException('PHP\'s mbstring.func_overload setting is enabled for string functions. This can lead to dangerous side effects.');
+		}
+	}
+	
+	public function initDefs ()
+	{
+		foreach ($this->layer_paths as $path)
+		{
+			$path .= '/defs.php';
+			
+			if (file_exists($path))
+			{
+				$this->load($path);
+			}
 		}
 	}
 	
