@@ -107,7 +107,7 @@ class CoreProvider
 		
 		if (file_exists($path))
 		{
-			$this->load($path);
+			require ($path);
 		}
 	}
 	
