@@ -128,8 +128,6 @@ class Patcher
 						{
 							// Patch doesn't match.
 							
-							var_dump(substr($data, $data_pos, $line_len));
-							var_dump($line);
 							return false;
 						}
 						elseif (substr($data, $data_pos + $line_len, 1) !== "\n")
