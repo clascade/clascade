@@ -1,13 +1,14 @@
 <?php
 
 namespace Clascade\Util;
+use Clascade\Util\Diff\Hunk;
 
 class Diff
 {
 	public $old_data;
 	public $new_data;
+	public $hunks;
 	public $context_size = 3;
-	public $page_size = 999999;
 	
 	public function __construct ($old_data, $new_data, $params=null)
 	{
@@ -20,22 +21,32 @@ class Diff
 			{
 				$this->context_size = $params['context-size'];
 			}
-			
-			if (isset ($params['page-size']))
-			{
-				$this->page_size = $params['page-size'];
-			}
 		}
+	}
+	
+	public function __toString ()
+	{
+		return $this->getDiff();
 	}
 	
 	public function getDiff ()
 	{
-		$diff = '';
-		$old_size = count($this->old_data);
-		$new_size = count($this->new_data);
-		$end = max($old_size, $new_size);
+		return implode('', $this->getHunks());
+	}
+	
+	public function getHunks ()
+	{
+		if ($this->hunks === null)
+		{
+			$this->execute();
+		}
 		
-		return $this->getSegmentHunks(0, $old_size, 0, $new_size);
+		return $this->hunks;
+	}
+	
+	public function execute ()
+	{
+		$this->hunks = $this->getSegmentHunks(0, count($this->old_data), 0, count($this->new_data));
 	}
 	
 	public function getSegmentHunks ($old_start, $old_end, $new_start, $new_end)
@@ -46,7 +57,7 @@ class Diff
 		{
 			// Yes. Don't bother with the extra logic.
 			
-			return '';
+			return [];
 		}
 		
 		// Find the longest common subsequence in this segment.
@@ -88,14 +99,25 @@ class Diff
 		{
 			// There are no significant matches in this segment. This is a change.
 			
-			return $this->getHunk($old_start, $old_end, $new_start, $new_end);
+			return [$this->getHunk($old_start, $old_end, $new_start, $new_end)];
 		}
 		
 		// Found a string match in this segment. Recursively
 		// check the unmatched string segments around it.
 		
-		return $this->getSegmentHunks($old_start, $old_pos, $new_start, $new_pos).
-		       $this->getSegmentHunks($old_pos + $match_len, $old_end, $new_pos + $match_len, $new_end);
+		$hunks = [];
+		
+		foreach ($this->getSegmentHunks($old_start, $old_pos, $new_start, $new_pos) as $hunk)
+		{
+			$hunks[] = $hunk;
+		}
+		
+		foreach ($this->getSegmentHunks($old_pos + $match_len, $old_end, $new_pos + $match_len, $new_end) as $hunk)
+		{
+			$hunks[] = $hunk;
+		}
+		
+		return $hunks;
 	}
 	
 	public function getLongestMatch ($old_start, $old_end, $new_start, $new_end)
@@ -188,48 +210,21 @@ class Diff
 		
 		--$lines_after;
 		
-		// Hunk information.
+		// Initialize hunk.
 		
-		$hunk_old_start = $old_start - $lines_before + 1;
-		$hunk_old_len = $old_end - $old_start + $lines_before + $lines_after;
-		$hunk_new_start = $new_start - $lines_before + 1;
-		$hunk_new_len = $new_end - $new_start + $lines_before + $lines_after;
-		
-		$hunk = '@@ -';
-		
-		switch ($hunk_old_len)
-		{
-		case 0:
-			$hunk .= ($hunk_old_start - 1).',0';
-			break;
-		case 1:
-			$hunk .= $hunk_old_start;
-			break;
-		default:
-			$hunk .= "{$hunk_old_start},{$hunk_old_len}";
-		}
-		
-		$hunk .= ' +';
-		
-		switch ($hunk_new_len)
-		{
-		case 0:
-			$hunk .= ($hunk_new_start - 1).',0';
-			break;
-		case 1:
-			$hunk .= $hunk_new_start;
-			break;
-		default:
-			$hunk .= "{$hunk_new_start},{$hunk_new_len}";
-		}
-		
-		$hunk .= " @@\n";
+		$hunk = new Hunk();
+		$hunk->old_start = $old_start - $lines_before + 1;
+		$hunk->old_length = $old_end - $old_start + $lines_before + $lines_after;
+		$hunk->new_start = $new_start - $lines_before + 1;
+		$hunk->new_length = $new_end - $new_start + $lines_before + $lines_after;
+		$hunk->old_trailing_delim = ends_with(array_last($this->old_data), "\n");
+		$hunk->new_trailing_delim = ends_with(array_last($this->new_data), "\n");
 		
 		// Identical lines before changes.
 		
 		while ($lines_before > 0)
 		{
-			$hunk .= ' '.$this->old_data[$old_start - $lines_before];
+			$hunk->context_before[] = $this->old_data[$old_start - $lines_before];
 			--$lines_before;
 		}
 		
@@ -255,31 +250,21 @@ class Diff
 					}
 				}
 				
-				$hunk .= '-'.$this->old_data[$i];
+				$hunk->changes[] = ['type' => 'old', 'data' => $this->old_data[$i]];
 				++$i;
-			}
-			
-			if (substr($hunk, -1) != "\n")
-			{
-				$hunk .= "\n\\ No newline at end of file\n";
 			}
 			
 			while ($j < $new_end && (!$found_identical || $j < $k))
 			{
-				$hunk .= '+'.$this->new_data[$j];
+				$hunk->changes[] = ['type' => 'new', 'data' => $this->new_data[$j]];
 				++$j;
-			}
-			
-			if (substr($hunk, -1) != "\n")
-			{
-				$hunk .= "\n\\ No newline at end of file\n";
 			}
 			
 			if ($found_identical)
 			{
 				do
 				{
-					$hunk .= ' '.$this->old_data[$i];
+					$hunk->changes[] = ['type' => 'both', 'data' => $this->old_data[$i]];
 					++$i;
 					++$j;
 				}
@@ -291,12 +276,7 @@ class Diff
 		
 		for ($i = 0; $i < $lines_after; ++$i)
 		{
-			$hunk .= ' '.$this->old_data[$old_end + $i];
-		}
-		
-		if (substr($hunk, -1) != "\n")
-		{
-			$hunk .= "\n\\ No newline at end of file\n";
+			$hunk->context_after[] = $this->old_data[$old_start - $lines_before];
 		}
 		
 		return $hunk;

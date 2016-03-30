@@ -11,6 +11,7 @@ class Patcher
 			$is_reverse = false;
 		}
 		
+		$patch = (string) $patch;
 		$data_pos = 0;
 		$patch_pos = 0;
 		$data_line = 0;
