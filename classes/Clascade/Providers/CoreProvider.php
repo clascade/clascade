@@ -30,6 +30,8 @@ class CoreProvider
 		}
 	}
 	
+	//== Initialization ==/
+	
 	public function init ()
 	{
 		$this->initFunctions();
@@ -51,9 +53,33 @@ class CoreProvider
 		}
 	}
 	
+	public function initEnvironment ()
+	{
+		ini_set('default_charset', 'UTF-8');
+		
+		if (extension_loaded('mbstring'))
+		{
+			mb_internal_encoding('UTF-8');
+			mb_substitute_character(65533);
+		}
+	}
+	
 	public function initAutoload ()
 	{
 		spl_autoload_register([$this, 'autoload']);
+	}
+	
+	public function checkEnvironment ($force=null)
+	{
+		if (!$this->environment_checks_enabled && !$force)
+		{
+			return;
+		}
+		
+		if (ini_get('mbstring.func_overload') & 2 !== 0)
+		{
+			throw new Exception\ConfigurationException('PHP\'s mbstring.func_overload setting is enabled for string functions. This can lead to dangerous side effects.');
+		}
 	}
 	
 	/**
@@ -395,31 +421,5 @@ class CoreProvider
 			
 			return call_user_func_array([$scope, $method], $args);
 		};
-	}
-	
-	//== PHP environment ==//
-	
-	public function initEnvironment ()
-	{
-		ini_set('default_charset', 'UTF-8');
-		
-		if (extension_loaded('mbstring'))
-		{
-			mb_internal_encoding('UTF-8');
-			mb_substitute_character(65533);
-		}
-	}
-	
-	public function checkEnvironment ($force=null)
-	{
-		if (!$this->environment_checks_enabled && !$force)
-		{
-			return;
-		}
-		
-		if (ini_get('mbstring.func_overload') & 2 !== 0)
-		{
-			throw new Exception\ConfigurationException('PHP\'s mbstring.func_overload setting is enabled for string functions. This can lead to dangerous side effects.');
-		}
 	}
 }
