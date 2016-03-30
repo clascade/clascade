@@ -1,0 +1,26 @@
+{
+	"require": {
+		"length": "\"%{field}\" must be exactly %{num} character.|\"%{field}\" must be exactly %{num} characters.",
+		"max-byte-length": "\"%{field}\" must be no longer than %{num} character.|\"%{field}\" must be no longer than %{num} characters.",
+		"max-length": "\"%{field}\" must be no longer than %{num} character.|\"%{field}\" must be no longer than %{num} characters.",
+		"non-blank": "Missing required field \"%{field}\".",
+		"one-of": "The value given for \"%{field}\" isn't one of the allowed values.",
+		
+		"alnum": "\"%{field}\" must consist entirely of alphanumeric characters.",
+		"alpha": "\"%{field}\" must consist entirely of letters.",
+		"blank": "\"%{field}\" must consist left blank.",
+		"ascii": "\"%{field}\" must consist entirely of ASCII characters.",
+		"ctrl": "\"%{field}\" must consist entirely of control characters.",
+		"digits": "\"%{field}\" must be a positive whole number.",
+		"email": "\"%{field}\" must be a valid email address.",
+		"graph": "\"%{field}\" must consist entirely of printable characters, excluding space.",
+		"lower": "\"%{field}\" must consist entirely of lowercase letters.",
+		"print": "\"%{field}\" must consist entirely of printable characters.",
+		"punct": "\"%{field}\" must consist entirely of punctuation characters.",
+		"simple-int": "\"%{field}\" must be a whole number.",
+		"simple-number": "\"%{field}\" must be a number.",
+		"space": "\"%{field}\" must consist entirely of whitespace.",
+		"upper": "\"%{field}\" must consist entirely of uppercase characters.",
+		"xdigit": "\"%{field}\" must consist entirely of hexadecimal digits."
+	}
+}

@@ -1,0 +1,116 @@
+{
+	"auth": {
+		"default-store": "Clascade\\Auth\\UserStore\\DB",
+		"sources-enabled": [
+			"Clascade\\Auth\\CredentialSource\\Cookie"
+		],
+		"source": {
+			"cookie": {
+				"remember-me-time": 2592000,
+				"name": "auth"
+			},
+			"http-basic": {
+				"realm": "Clascade"
+			}
+		},
+		"store": {
+			"db": {
+				"connection-name": null
+			}
+		},
+		"max-login-attempts-per-period": 10,
+		"login-attempt-period": 3600,
+		"password-min-score": 29,
+		"password-sleep-time": 2000000,
+		"reset-lifetime-hours": 48,
+		"activation-time-hours": 720
+	},
+	
+	"field-names": {
+		"csrf-token": "csrf-token",
+		"redirect-to": "redirect-to",
+		"return-to": "return-to",
+		"status": "status"
+	},
+	
+	"hooks": {
+		"request": [
+			"Clascade\\Middleware\\SessionInitializer",
+			"Clascade\\Middleware\\AuthInitializer",
+			"Clascade\\Middleware\\CSRFTokenValidator",
+			"Clascade\\Middleware\\SimpleAuth"
+		]
+	},
+	
+	"intl": {
+		"default-lang": "en",
+		"supported-langs": ["en", "en_US"]
+	},
+	
+	"mail": {
+		"default-mailer": "Clascade\\Mail\\Mailer\\MailFunction"
+	},
+	
+	"router.wildcard-patterns": [
+		["digit", "/^[0-9]+$/"],
+		["lower", "/^[a-z]+$/"],
+		["upper", "/^[A-Z]+$/"],
+		["alpha", "/^[A-Za-z]+$/"],
+		["xdigit", "/^[0-9A-Fa-f]+$/"],
+		["alnum", "/^[0-9A-Za-z]+$/"],
+		["slug", "/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/"],
+		["slugchars", "/^[a-z0-9\\-]+$/"],
+		["snake", "/^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/"],
+		["snakechars", "/^[a-z0-9\\_]+$/"],
+		["base64", "/^[A-Za-z0-9\\-_]+$/"],
+		["any", "//"]
+	],
+	
+	"server": {
+		"xsendfile-enabled": false
+	},
+	
+	"session": {
+		"default-manager": "Clascade\\Session\\Manager\\PHPSession",
+		"expire-time-seconds": 7200,
+		"manager": {
+			"php-session": {
+				"handler": "SessionHandler"
+			}
+		}
+	},
+	
+	"status": {
+		"max-reports": 20
+	},
+	
+	"urls": {
+		"app-base": "",
+		"assets-base": "/assets",
+		"login": "/login",
+		"login-dest": "/dashboard",
+		"logout": "/logout",
+		"logout-dest": "/login",
+		"reset-password": "/reset"
+	},
+	
+	"util": {
+		"pass-hash": {
+			"default": {
+				"algo": "pbkdf2-sha512",
+				"salt-size": 16
+			},
+			"hash-strength": 500
+		},
+		
+		"template": {
+			"use-whitelist": false,
+			"whitelist": [
+			],
+			"blacklist": [
+				"keys"
+			]
+		}
+	}
+}
+

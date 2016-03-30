@@ -1,0 +1,8 @@
+{
+	"error.forbidden.body": "You are not allowed to access this page.",
+	"error.locked.body": "Please close all browser windows to finish logging out.",
+	"error.method-not-allowed.body": "The request method is not supported for this page.",
+	"error.not-found.body": "The page you requested does not exist.",
+	"error.post-not-allowed-body": "Form submissions to this page are not allowed.",
+	"error.unauthorized.body": "You must be logged in to access this page."
+}
