@@ -9,31 +9,32 @@ class Diff
 	public $new_data;
 	public $hunks;
 	public $context_size = 3;
-	public $delimiter = "\n";
+	public $delimiter_pattern = "\n";
 	
 	public function __construct ($old_data, $new_data, $params=null)
 	{
-		if ($params !== null)
+		if (isset ($params['context-size']))
 		{
-			if (isset ($params['context-size']))
-			{
-				$this->context_size = $params['context-size'];
-			}
-			
-			if (isset ($params['delimiter']))
-			{
-				$this->delimiter = $params['delimiter'];
-			}
+			$this->context_size = $params['context-size'];
 		}
 		
-		if ($this->delimiter == '')
+		if (isset ($params['delimiter-pattern']))
+		{
+			$this->delimiter_pattern = str_replace('/', '\\/', $params['delimiter-pattern']);
+		}
+		elseif (isset ($params['delimiter']))
+		{
+			$this->delimiter_pattern = preg_quote($params['delimiter'], '/');
+		}
+		
+		if ($this->delimiter_pattern == '')
 		{
 			$this->old_data = str_split($old_data);
 			$this->new_data = str_split($new_data);
 		}
 		else
 		{
-			$pattern = '/(?<='.preg_quote($this->delimiter, '/').')(?!$)/';
+			$pattern = "/(?<={$this->delimiter_pattern})(?!\$)/";
 			$this->old_data = preg_split($pattern, $old_data);
 			$this->new_data = preg_split($pattern, $new_data);
 		}
@@ -41,11 +42,20 @@ class Diff
 	
 	public function __toString ()
 	{
-		return $this->getDiff();
+		$diff = $this->getDiff();
+		return $diff === false ? '' : $diff;
 	}
 	
 	public function getDiff ()
 	{
+		if ($this->delimiter_pattern != "\n")
+		{
+			// Unified diffs for non-newline-delimited data
+			// is not currently supported.
+			
+			return false;
+		}
+		
 		return implode('', $this->getHunks());
 	}
 	
@@ -232,8 +242,8 @@ class Diff
 		$hunk->old_length = $old_end - $old_start + $lines_before + $lines_after;
 		$hunk->new_start = $new_start - $lines_before + 1;
 		$hunk->new_length = $new_end - $new_start + $lines_before + $lines_after;
-		$hunk->old_trailing_delim = ends_with(array_last($this->old_data), $this->delimiter);
-		$hunk->new_trailing_delim = ends_with(array_last($this->new_data), $this->delimiter);
+		$hunk->old_trailing_delim = preg_match("/{$this->delimiter_pattern}\$/", array_last($this->old_data));
+		$hunk->new_trailing_delim = preg_match("/{$this->delimiter_pattern}\$/", array_last($this->new_data));
 		
 		// Identical lines before changes.
 		
