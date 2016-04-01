@@ -16,10 +16,6 @@ class FallbackAESProvider
 	public $enc;
 	public $dec;
 	
-	public $pos = 0;
-	public $iv = null;
-	public $next_iv = null;
-	
 	public function __construct ()
 	{
 		$this->genTables();
