@@ -2,6 +2,7 @@
 
 namespace Clascade\Util;
 use Clascade\Exception;
+use Clascade\Util\Crypto\FallbackAES;
 
 class Crypto
 {
@@ -118,26 +119,31 @@ class Crypto
 			
 			$ciphertext = openssl_encrypt($plaintext, 'AES-256-CBC', $enc_key, \OPENSSL_RAW_DATA, $iv);
 		}
-		elseif (function_exists('mcrypt_encrypt'))
+		else
 		{
-			// Mcrypt doesn't do PKCS7 padding on its own, so we'll
-			// do it ourselves. This will allow us to restore the
-			// data to its original size after decryption.
-			// Otherwise, AES would pad it with null bytes, which
-			// we couldn't unambiguously remove, because the data
-			// itself might end with null bytes.
+			// Mcrypt and FallbackAES don't do PKCS7 padding on
+			// their own, so we'll do it here. This will allow us
+			// to restore the data to its original size after
+			// decryption. Otherwise, AES would pad it with null
+			// bytes, which we couldn't unambiguously remove,
+			// because the data itself might end with null bytes.
 			
 			$pad_len = 16 - (strlen($plaintext) % 16);
 			$plaintext .= str_repeat(chr($pad_len), $pad_len);
 			
-			// RIJNDAEL-128 was the original name of AES-256. The
-			// 128 refers to the block size, not the key size.
-			
-			$ciphertext = mcrypt_encrypt(\MCRYPT_RIJNDAEL_128, $enc_key, $plaintext, 'cbc', $iv);
-		}
-		else
-		{
-			throw new Exception\ConfigurationException('No suitable crypto module found. Please install openssl or mcrypt.');
+			if (function_exists('mcrypt_encrypt'))
+			{
+				// RIJNDAEL-128 was the original name of AES-256. The
+				// 128 refers to the block size, not the key size.
+				
+				$ciphertext = mcrypt_encrypt(\MCRYPT_RIJNDAEL_128, $enc_key, $plaintext, 'cbc', $iv);
+			}
+			else
+			{
+				// Fall back to a native PHP implementation of AES.
+				
+				$ciphertext = FallbackAES::encryptCBC($enc_key, $iv, $plaintext);
+			}
 		}
 		
 		// Escape the key ID so it doesn't contain null bytes.
@@ -240,18 +246,21 @@ class Crypto
 		{
 			$plaintext = openssl_decrypt($ciphertext, 'AES-256-CBC', $enc_key, \OPENSSL_RAW_DATA, $iv);
 		}
-		elseif (function_exists('mcrypt_decrypt'))
+		else
 		{
-			$plaintext = mcrypt_decrypt(\MCRYPT_RIJNDAEL_128, $enc_key, $ciphertext, 'cbc', $iv);
+			if (function_exists('mcrypt_decrypt'))
+			{
+				$plaintext = mcrypt_decrypt(\MCRYPT_RIJNDAEL_128, $enc_key, $ciphertext, 'cbc', $iv);
+			}
+			else
+			{
+				$plaintext = FallbackAES::decryptCBC($enc_key, $iv, $ciphertext);
+			}
 			
 			// Remove PKCS7 padding to restore the original length.
 			
 			$pad_len = ord(substr($plaintext, -1));
 			$plaintext = substr($plaintext, 0, -$pad_len);
-		}
-		else
-		{
-			throw new Exception\ConfigurationException('No suitable crypto module found. Please install openssl or mcrypt.');
 		}
 		
 		return $plaintext;
