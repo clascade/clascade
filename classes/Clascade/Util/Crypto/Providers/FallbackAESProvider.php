@@ -31,6 +31,7 @@ class FallbackAESProvider
 		$this->pad($iv);
 		$this->pad($data);
 		$exp_key = $this->expandKey($key);
+		$exp_key = $exp_key['enc'];
 		$len = strlen($data);
 		$pos = 16;
 		
@@ -39,7 +40,7 @@ class FallbackAESProvider
 			$data[$i] = $data[$i] ^ $iv[$i];
 		}
 		
-		$this->block($this->enc, $exp_key['enc'], $data, 0);
+		$this->block($this->enc, $exp_key, $data, 0);
 		
 		while ($pos < $len)
 		{
@@ -49,7 +50,7 @@ class FallbackAESProvider
 				++$pos;
 			}
 			
-			$this->block($this->enc, $exp_key['enc'], $data, $pos - 16);
+			$this->block($this->enc, $exp_key, $data, $pos - 16);
 		}
 		
 		return $data;
@@ -65,13 +66,14 @@ class FallbackAESProvider
 		$this->pad($iv);
 		$this->pad($data);
 		$exp_key = $this->expandKey($key);
+		$exp_key = $exp_key['dec'];
 		$next_iv = substr($data, 0, 16);
 		$len = strlen($data);
 		$pos = 0;
 		
 		while ($pos < $len)
 		{
-			$this->block($this->dec, $exp_key['dec'], $data, $pos);
+			$this->block($this->dec, $exp_key, $data, $pos);
 			
 			for ($i = 0; $i < 16; ++$i)
 			{
@@ -150,10 +152,11 @@ class FallbackAESProvider
 	{
 		$this->unpack($value, $this->temp, 0);
 		
-		$this->temp2[0] = $this->bmule[$this->temp[0]] ^ $this->bmulb[$this->temp[1]] ^ $this->bmuld[$this->temp[2]] ^ $this->bmul9[$this->temp[3]];
-		$this->temp2[1] = $this->bmul9[$this->temp[0]] ^ $this->bmule[$this->temp[1]] ^ $this->bmulb[$this->temp[2]] ^ $this->bmuld[$this->temp[3]];
-		$this->temp2[2] = $this->bmuld[$this->temp[0]] ^ $this->bmul9[$this->temp[1]] ^ $this->bmule[$this->temp[2]] ^ $this->bmulb[$this->temp[3]];
-		$this->temp2[3] = $this->bmulb[$this->temp[0]] ^ $this->bmuld[$this->temp[1]] ^ $this->bmul9[$this->temp[2]] ^ $this->bmule[$this->temp[3]];
+		$temp = &$this->temp;
+		$this->temp2[0] = $this->bmule[$temp[0]] ^ $this->bmulb[$temp[1]] ^ $this->bmuld[$temp[2]] ^ $this->bmul9[$temp[3]];
+		$this->temp2[1] = $this->bmul9[$temp[0]] ^ $this->bmule[$temp[1]] ^ $this->bmulb[$temp[2]] ^ $this->bmuld[$temp[3]];
+		$this->temp2[2] = $this->bmuld[$temp[0]] ^ $this->bmul9[$temp[1]] ^ $this->bmule[$temp[2]] ^ $this->bmulb[$temp[3]];
+		$this->temp2[3] = $this->bmulb[$temp[0]] ^ $this->bmuld[$temp[1]] ^ $this->bmul9[$temp[2]] ^ $this->bmule[$temp[3]];
 		
 		return $this->pack($this->temp2, 0);
 	}
@@ -261,78 +264,80 @@ class FallbackAESProvider
 	
 	public function expandKey ($key)
 	{
+		$key_length = max(strlen($key) >> 2, 4);
+		$num_rounds = 6 + $key_length;
+		$num = ($num_rounds + 1) * 4;
+		
 		$exp_key =
 		[
-			'key-length' => max(strlen($key) >> 2, 4),
+			'enc' =>
+			[
+				'inc' => array_fill(0, 12, 0),
+				'key' => array_fill(0, $num, 0),
+				'num-rounds' => $num_rounds,
+			],
+			'dec' =>
+			[
+				'inc' => array_fill(0, 12, 0),
+				'key' => array_fill(0, $num, 0),
+				'num-rounds' => $num_rounds,
+			],
 		];
 		
-		$exp_key['num-rounds'] = 6 + $exp_key['key-length'];
-		
-		$num = ($exp_key['num-rounds'] + 1) * 4;
-		
-		$exp_key['enc'] =
-		[
-			'inc' => array_fill(0, 12, 0),
-			'key' => array_fill(0, $num, 0),
-			'num-rounds' => $exp_key['num-rounds'],
-		];
-		
-		$exp_key['dec'] =
-		[
-			'inc' => array_fill(0, 12, 0),
-			'key' => array_fill(0, $num, 0),
-			'num-rounds' => $exp_key['num-rounds'],
-		];
+		$enc_inc = &$exp_key['enc']['inc'];
+		$enc_key = &$exp_key['enc']['key'];
+		$dec_inc = &$exp_key['dec']['inc'];
+		$dec_key = &$exp_key['dec']['key'];
 		
 		for ($m = $i = 0; $i < 4; ++$i, $m += 3)
 		{
-			$exp_key['enc']['inc'][$m] = ($i + 1) & 0x3;
-			$exp_key['enc']['inc'][$m + 1] = ($i + 2) & 0x3;
-			$exp_key['enc']['inc'][$m + 2] = ($i + 3) & 0x3;
+			$enc_inc[$m] = ($i + 1) & 0x3;
+			$enc_inc[$m + 1] = ($i + 2) & 0x3;
+			$enc_inc[$m + 2] = ($i + 3) & 0x3;
 			
-			$exp_key['dec']['inc'][$m] = ($i + 3) & 0x3;
-			$exp_key['dec']['inc'][$m + 1] = ($i + 2) & 0x3;
-			$exp_key['dec']['inc'][$m + 2] = ($i + 1) & 0x3;
+			$dec_inc[$m] = ($i + 3) & 0x3;
+			$dec_inc[$m + 1] = ($i + 2) & 0x3;
+			$dec_inc[$m + 2] = ($i + 1) & 0x3;
 		}
 		
-		for ($i = $exp_key['key-length'] - 1; $i >= 0; --$i)
+		for ($i = $key_length - 1; $i >= 0; --$i)
 		{
-			$exp_key['enc']['key'][$i] = $this->packStr($key, $i << 2);
+			$enc_key[$i] = $this->packStr($key, $i << 2);
 		}
 		
-		for ($i = $exp_key['key-length'], $j = 0; $i < $num; $i += $exp_key['key-length'], ++$j)
+		for ($i = $key_length, $j = 0; $i < $num; $i += $key_length, ++$j)
 		{
-			$exp_key['enc']['key'][$i] = $exp_key['enc']['key'][$i - $exp_key['key-length']] ^ $this->subByte($this->rotL24($exp_key['enc']['key'][$i - 1])) ^ $this->rco[$j];
+			$enc_key[$i] = $enc_key[$i - $key_length] ^ $this->subByte($this->rotL24($enc_key[$i - 1])) ^ $this->rco[$j];
 			
-			if ($exp_key['key-length'] <= 6)
+			if ($key_length <= 6)
 			{
-				for ($k = 1; $k < $exp_key['key-length'] && $i + $k < $num; ++$k)
+				for ($k = 1; $k < $key_length && $i + $k < $num; ++$k)
 				{
-					$exp_key['enc']['key'][$i + $k] = $exp_key['enc']['key'][$i + $k - $exp_key['key-length']] ^ $exp_key['enc']['key'][$i + $k - 1];
+					$enc_key[$i + $k] = $enc_key[$i + $k - $key_length] ^ $enc_key[$i + $k - 1];
 				}
 			}
 			else
 			{
 				for ($k = 1; $k < 4 && $i + $k < $num; ++$k)
 				{
-					$exp_key['enc']['key'][$i + $k] = $exp_key['enc']['key'][$i + $k - $exp_key['key-length']] ^ $exp_key['enc']['key'][$i + $k - 1];
+					$enc_key[$i + $k] = $enc_key[$i + $k - $key_length] ^ $enc_key[$i + $k - 1];
 				}
 				
 				if ($i + 4 < $num)
 				{
-					$exp_key['enc']['key'][$i + 4] = $exp_key['enc']['key'][$i + 4 - $exp_key['key-length']] ^ $this->subByte($exp_key['enc']['key'][$i + 3]);
+					$enc_key[$i + 4] = $enc_key[$i + 4 - $key_length] ^ $this->subByte($enc_key[$i + 3]);
 				}
 				
-				for ($k = 5; $k < $exp_key['key-length'] && ($i + $k) < $num; ++$k)
+				for ($k = 5; $k < $key_length && ($i + $k) < $num; ++$k)
 				{
-					$exp_key['enc']['key'][$i + $k] = $exp_key['enc']['key'][$i + $k - $exp_key['key-length']] ^ $exp_key['enc']['key'][$i + $k - 1];
+					$enc_key[$i + $k] = $enc_key[$i + $k - $key_length] ^ $enc_key[$i + $k - 1];
 				}
 			}
 		}
 		
 		for ($i = 0; $i < 4; ++$i)
 		{
-			$exp_key['dec']['key'][$i + $num - 4] = $exp_key['enc']['key'][$i];
+			$dec_key[$i + $num - 4] = $enc_key[$i];
 		}
 		
 		for ($i = 4; $i < $num - 4; $i += 4)
@@ -341,13 +346,13 @@ class FallbackAESProvider
 			
 			for ($k = 0; $k < 4; ++$k)
 			{
-				$exp_key['dec']['key'][$j + $k] = $this->invMixCol($exp_key['enc']['key'][$i + $k]);
+				$dec_key[$j + $k] = $this->invMixCol($enc_key[$i + $k]);
 			}
 		}
 		
 		for ($i = $num - 4; $i < $num; ++$i)
 		{
-			$exp_key['dec']['key'][$i - $num + 4] = $exp_key['enc']['key'][$i];
+			$dec_key[$i - $num + 4] = $enc_key[$i];
 		}
 		
 		return $exp_key;
@@ -355,53 +360,69 @@ class FallbackAESProvider
 	
 	public function block ($direction, $dir_exp_key, &$data, $pos)
 	{
-		for ($i = 0; $i < 4; ++$i, $pos += 4)
-		{
-			$this->x[$i] = $this->packStr($data, $pos) ^ $dir_exp_key['key'][$i];
-		}
-		
+		$key = $dir_exp_key['key'];
+		$num_rounds = $dir_exp_key['num-rounds'];
+		$lookup = $direction['lookup'];
+		$lookup_l8 = $direction['lookup-l8'];
+		$lookup_l16 = $direction['lookup-l16'];
+		$lookup_l24 = $direction['lookup-l24'];
+		$inc = $dir_exp_key['inc'];
+		$sbox = $direction['sbox'];
+		$x = &$this->x;
+		$y = &$this->y;
 		$k = 4;
 		
-		for ($i = 0; $i < $dir_exp_key['num-rounds']; $i += 2)
+		for ($i = 0; $i < 4; ++$i, $pos += 4)
 		{
-			if ($i != 0)
+			$x[$i] = ((ord($data[$pos + 3]) << 24) | (ord($data[$pos + 2]) << 16) | (ord($data[$pos + 1]) << 8) | ord($data[$pos])) ^ $key[$i];
+		}
+		
+		for ($m = $j = 0; $j < 4; ++$j, ++$k, $m += 3)
+		{
+			$y[$j] =
+				$key[$k] ^ $lookup[$x[$j] & 0xff] ^
+				$lookup_l8[($x[$inc[$m]] >> 8) & 0xff] ^
+				$lookup_l16[($x[$inc[$m + 1]] >> 16) & 0xff] ^
+				$lookup_l24[$x[$inc[$m + 2]] >> 24];
+		}
+		
+		for ($i = $num_rounds - 2; $i > 0; $i -= 2)
+		{
+			for ($m = $j = 0; $j < 4; ++$j, ++$k, $m += 3)
 			{
-				for ($m = $j = 0; $j < 4; ++$j, ++$k, $m += 3)
-				{
-					$this->x[$j] =
-						$dir_exp_key['key'][$k] ^ $direction['lookup'][$this->y[$j] & 0xff] ^
-						$direction['lookup-l8'][($this->y[$dir_exp_key['inc'][$m]] >> 8) & 0xff] ^
-						$direction['lookup-l16'][($this->y[$dir_exp_key['inc'][$m + 1]] >> 16) & 0xff] ^
-						$direction['lookup-l24'][$this->y[$dir_exp_key['inc'][$m + 2]] >> 24];
-				}
+				$x[$j] =
+					$key[$k] ^ $lookup[$y[$j] & 0xff] ^
+					$lookup_l8[($y[$inc[$m]] >> 8) & 0xff] ^
+					$lookup_l16[($y[$inc[$m + 1]] >> 16) & 0xff] ^
+					$lookup_l24[$y[$inc[$m + 2]] >> 24];
 			}
 			
 			for ($m = $j = 0; $j < 4; ++$j, ++$k, $m += 3)
 			{
-				$this->y[$j] =
-					$dir_exp_key['key'][$k] ^ $direction['lookup'][$this->x[$j] & 0xff] ^
-					$direction['lookup-l8'][($this->x[$dir_exp_key['inc'][$m]] >> 8) & 0xff] ^
-					$direction['lookup-l16'][($this->x[$dir_exp_key['inc'][$m + 1]] >> 16) & 0xff] ^
-					$direction['lookup-l24'][$this->x[$dir_exp_key['inc'][$m + 2]] >> 24];
+				$y[$j] =
+					$key[$k] ^ $lookup[$x[$j] & 0xff] ^
+					$lookup_l8[($x[$inc[$m]] >> 8) & 0xff] ^
+					$lookup_l16[($x[$inc[$m + 1]] >> 16) & 0xff] ^
+					$lookup_l24[$x[$inc[$m + 2]] >> 24];
 			}
 		}
 		
 		for ($m = $j = 0; $j < 4; ++$j, ++$k, $m += 3)
 		{
-			$this->x[$j] =
-				$dir_exp_key['key'][$k] ^ $direction['sbox'][$this->y[$j] & 0xff] ^
-				($direction['sbox'][($this->y[$dir_exp_key['inc'][$m]] >> 8) & 0xff] << 8) ^
-				($direction['sbox'][($this->y[$dir_exp_key['inc'][$m + 1]] >> 16) & 0xff] << 16) ^
-				($direction['sbox'][$this->y[$dir_exp_key['inc'][$m + 2]] >> 24] << 24);
+			$x[$j] =
+				$key[$k] ^ $sbox[$y[$j] & 0xff] ^
+				($sbox[($y[$inc[$m]] >> 8) & 0xff] << 8) ^
+				($sbox[($y[$inc[$m + 1]] >> 16) & 0xff] << 16) ^
+				($sbox[$y[$inc[$m + 2]] >> 24] << 24);
 		}
 		
 		for ($i = 0, $pos -= 16; $i < 4; ++$i, $pos += 4)
 		{
-			$value = $this->x[$i];
+			$value = $x[$i];
 			
-			$data[$pos] = chr($value & 0xff);
-			$data[$pos + 1] = chr(($value >> 8) & 0xff);
-			$data[$pos + 2] = chr(($value >> 16) & 0xff);
+			$data[$pos] = chr($value);
+			$data[$pos + 1] = chr($value >> 8);
+			$data[$pos + 2] = chr($value >> 16);
 			$data[$pos + 3] = chr($value >> 24);
 		}
 	}
