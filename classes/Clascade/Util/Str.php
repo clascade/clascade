@@ -175,7 +175,7 @@ class Str
 		
 		while ($sequence_length > 0)
 		{
-			if ($key_char >= $split_length)
+			if ($key_col >= $split_length)
 			{
 				// Begin the next chunk.
 				
