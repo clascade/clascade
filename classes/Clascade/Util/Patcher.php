@@ -18,14 +18,12 @@ class Patcher
 		$last_op = null;
 		$join_start = 0;
 		$needs_join = false;
-		$old_nl = true;
-		$new_nl = true;
-		$added_nl = false;
+		$extra_nl = false;
 		
-		if (substr($data, -1) != "\n")
+		if (!ends_with($data, "\n"))
 		{
 			$data .= "\n";
-			$added_nl = true;
+			$extra_nl = true;
 		}
 		
 		$line = $this->seekLine($patch, $patch_pos);
@@ -106,7 +104,7 @@ class Patcher
 			else
 			{
 				$type = substr($line, 0, 1);
-				$line = substr($line, 1);
+				$line = (string) substr($line, 1);
 				$line_len = strlen($line);
 				
 				switch ($type)
@@ -116,7 +114,6 @@ class Patcher
 					if ($type == '+' xor $is_reverse)
 					{
 						$data = substr_replace($data, $line."\n", $data_pos, 0);
-						
 						$last_op = '+';
 						$data_pos += $line_len + 1;
 						++$data_line;
@@ -124,7 +121,7 @@ class Patcher
 					}
 					else
 					{
-						if (substr($data, $data_pos, $line_len) !== $line)
+						if ((string) substr($data, $data_pos, $line_len) !== $line)
 						{
 							// Patch doesn't match.
 							
@@ -137,16 +134,16 @@ class Patcher
 						else
 						{
 							++$line_len;
+							--$delta;
 						}
 						
 						$last_op = '-';
 						$data = substr_replace($data, '', $data_pos, $line_len);
-						--$delta;
 					}
 					break;
 				
 				case ' ':
-					if (substr($data, $data_pos, $line_len) !== $line)
+					if ((string) substr($data, $data_pos, $line_len) !== $line)
 					{
 						// Patch doesn't match.
 						
@@ -159,30 +156,41 @@ class Patcher
 					else
 					{
 						++$line_len;
+						++$data_line;
 					}
 					
 					$last_op = ' ';
 					$data_pos += $line_len;
-					++$data_line;
 					break;
 				
 				case '\\':
-					if ($last_op != '-')
+					if ($last_op == '+' || $last_op == ' ')
 					{
-						$new_nl = false;
+						--$data_pos;
+						$join_start = $data_pos;
+						$data = substr_replace($data, '', $data_pos, 1);
 					}
 					
-					if ($last_op != '+')
+					if ($last_op == '-' || $last_op == ' ')
 					{
-						$old_nl = false;
+						$extra_nl = false;
 					}
 					
-					$last_op = '\\';
 					break;
 				
 				case '~':
 					$join_data = substr($data, $join_start, $data_pos - $join_start);
-					$join_data = str_replace("\n", '', $join_data)."\n";
+					$join_data = str_replace("\n", '', $join_data, $count);
+					$delta -= $count;
+					$data_line -= $count;
+					
+					if ($last_op != '-')
+					{
+						$join_data .= "\n";
+						++$data_line;
+						++$delta;
+					}
+					
 					$data = substr_replace($data, $join_data, $join_start, $data_pos - $join_start);
 					$data_pos = strlen($join_data) + $join_start;
 					$join_start = $data_pos;
@@ -206,8 +214,21 @@ class Patcher
 			return false;
 		}
 		
-		if ($added_nl xor $old_nl xor $new_nl)
+		if ($extra_nl)
 		{
+			// We know the input didn't end with a newline, but
+			// we never saw the no-newline marker. This means
+			// the end of the data wasn't in a change hunk,
+			// which means both versions have the same end. So,
+			// let's remove the newline we added.
+			
+			if (!ends_with($data, "\n"))
+			{
+				// Our newline somehow vanished. Something went wrong.
+				
+				return false;
+			}
+			
 			$data = substr($data, 0, -1);
 		}
 		

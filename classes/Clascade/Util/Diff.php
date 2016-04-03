@@ -8,54 +8,42 @@ class Diff
 	public $old_data;
 	public $new_data;
 	public $hunks;
-	public $context_size = 3;
-	public $delimiter_pattern = "\n";
+	public $context_size;
+	public $intraline;
 	
 	public function __construct ($old_data, $new_data, $params=null)
 	{
-		if (isset ($params['context-size']))
-		{
-			$this->context_size = $params['context-size'];
-		}
+		$this->context_size = (int) (isset ($params['context-size']) ? $params['context-size'] : 3);
+		$this->intraline = (bool) (isset ($params['intraline']) ? $params['intraline'] : false);
 		
-		if (isset ($params['delimiter-pattern']))
+		if (is_array($old_data))
 		{
-			$this->delimiter_pattern = str_replace('/', '\\/', $params['delimiter-pattern']);
-		}
-		elseif (isset ($params['delimiter']))
-		{
-			$this->delimiter_pattern = preg_quote($params['delimiter'], '/');
-		}
-		
-		if ($this->delimiter_pattern == '')
-		{
-			$this->old_data = str_split($old_data);
-			$this->new_data = str_split($new_data);
+			$this->old_data = $old_data;
 		}
 		else
 		{
-			$pattern = "/(?<={$this->delimiter_pattern})(?!\$)/";
-			$this->old_data = preg_split($pattern, $old_data);
-			$this->new_data = preg_split($pattern, $new_data);
+			preg_match_all('/.+\n?|\n/', $old_data, $old_data, \PREG_PATTERN_ORDER);
+			$this->old_data = $old_data[0];
+		}
+		
+		if (is_array($new_data))
+		{
+			$this->new_data = $new_data;
+		}
+		else
+		{
+			preg_match_all('/.+\n?|\n/', $new_data, $new_data, \PREG_PATTERN_ORDER);
+			$this->new_data = $new_data[0];
 		}
 	}
 	
 	public function __toString ()
 	{
-		$diff = $this->getDiff();
-		return $diff === false ? '' : $diff;
+		return $this->getDiff();
 	}
 	
 	public function getDiff ()
 	{
-		if ($this->delimiter_pattern != "\n")
-		{
-			// Unified diffs for non-newline-delimited data
-			// is not currently supported.
-			
-			return false;
-		}
-		
 		return implode('', $this->getHunks());
 	}
 	
@@ -227,7 +215,7 @@ class Diff
 		
 		for ($lines_after = 1; $lines_after <= $this->context_size; ++$lines_after)
 		{
-			if ($old_size - $old_end < $lines_after || $new_size - $new_end < $lines_after || $this->old_data[$old_end + $lines_after] != $this->new_data[$new_end + $lines_after])
+			if ($old_size - $old_end < $lines_after || $new_size - $new_end < $lines_after || $this->old_data[$old_end + $lines_after - 1] != $this->new_data[$new_end + $lines_after - 1])
 			{
 				break;
 			}
@@ -237,13 +225,13 @@ class Diff
 		
 		// Initialize hunk.
 		
-		$hunk = new Hunk();
-		$hunk->old_start = $old_start - $lines_before + 1;
+		$hunk = new Hunk($this->intraline);
+		$hunk->old_start = $old_start - $lines_before;
 		$hunk->old_length = $old_end - $old_start + $lines_before + $lines_after;
-		$hunk->new_start = $new_start - $lines_before + 1;
+		$hunk->new_start = $new_start - $lines_before;
 		$hunk->new_length = $new_end - $new_start + $lines_before + $lines_after;
-		$hunk->old_trailing_delim = preg_match("/{$this->delimiter_pattern}\$/", array_last($this->old_data));
-		$hunk->new_trailing_delim = preg_match("/{$this->delimiter_pattern}\$/", array_last($this->new_data));
+		$hunk->old_trailing_nl = ($old_end == 0 || $old_end != count($this->old_data) || ends_with($this->old_data[$old_end - 1], "\n"));
+		$hunk->new_trailing_nl = ($new_end == 0 || $new_end != count($this->new_data) || ends_with($this->new_data[$new_end - 1], "\n"));
 		
 		// Identical lines before changes.
 		
@@ -255,45 +243,112 @@ class Diff
 		
 		// Changes.
 		
-		$i = $old_start;
-		$j = $new_start;
-		
-		while ($i < $old_end || $j < $new_end)
+		if ($this->intraline)
 		{
-			$found_identical = false;
+			$old_data = $this->breakIntraline($this->old_data, $old_start, $old_end);
+			$new_data = $this->breakIntraline($this->new_data, $new_start, $new_end);
 			
-			while ($i < $old_end)
+			$subdiff = new Diff($old_data, $new_data,
+			[
+				'context-size' => max(count($old_data), count($new_data)),
+			]);
+			$subdiff->execute();
+			
+			foreach ($subdiff->hunks[0]->context_before as $data)
 			{
-				for ($k = $j; $k < $new_end; ++$k)
+				$hunk->concatChange('both', $data);
+			}
+			
+			foreach ($subdiff->hunks[0]->changes as $change)
+			{
+				$hunk->concatChange($change['type'], $change['data']);
+			}
+			
+			foreach ($subdiff->hunks[0]->context_after as $data)
+			{
+				$hunk->concatChange('both', $data);
+			}
+			
+			if ($hunk->changes[count($hunk->changes) - 1]['type'] != 'both')
+			{
+				// Make sure the version without a trailing newline has
+				// a change appearance after the last "both" entry.
+				
+				if (!$hunk->old_trailing_nl)
 				{
-					if ($this->new_data[$k] == $this->old_data[$i])
+					for ($i = count($hunk->changes) - 1; $i >= 0; --$i)
 					{
-						// Found an identical line in the middle of the change hunk.
+						switch ($hunk->changes[$i]['type'])
+						{
+						case 'old':
+							break 2;
 						
-						$found_identical = true;
-						break 2;
+						case 'both':
+							$hunk->changes[] = ['type' => 'old', 'data' => ''];
+							break 2;
+						}
 					}
 				}
 				
-				$hunk->changes[] = ['type' => 'old', 'data' => $this->old_data[$i]];
-				++$i;
-			}
-			
-			while ($j < $new_end && (!$found_identical || $j < $k))
-			{
-				$hunk->changes[] = ['type' => 'new', 'data' => $this->new_data[$j]];
-				++$j;
-			}
-			
-			if ($found_identical)
-			{
-				do
+				if (!$hunk->new_trailing_nl)
 				{
-					$hunk->changes[] = ['type' => 'both', 'data' => $this->old_data[$i]];
+					for ($i = count($hunk->changes) - 1; $i >= 0; --$i)
+					{
+						switch ($hunk->changes[$i]['type'])
+						{
+						case 'new':
+							break 2;
+						
+						case 'both':
+							$hunk->changes[] = ['type' => 'new', 'data' => ''];
+							break 2;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			$i = $old_start;
+			$j = $new_start;
+			
+			while ($i < $old_end || $j < $new_end)
+			{
+				$found_identical = false;
+				
+				while ($i < $old_end)
+				{
+					for ($k = $j; $k < $new_end; ++$k)
+					{
+						if ($this->new_data[$k] == $this->old_data[$i])
+						{
+							// Found an identical line in the middle of the change hunk.
+							
+							$found_identical = true;
+							break 2;
+						}
+					}
+					
+					$hunk->changes[] = ['type' => 'old', 'data' => $this->old_data[$i]];
 					++$i;
+				}
+				
+				while ($j < $new_end && (!$found_identical || $j < $k))
+				{
+					$hunk->changes[] = ['type' => 'new', 'data' => $this->new_data[$j]];
 					++$j;
 				}
-				while ($i < $old_end && $j < $new_end && $this->old_data[$i] == $this->new_data[$j]);
+				
+				if ($found_identical)
+				{
+					do
+					{
+						$hunk->changes[] = ['type' => 'both', 'data' => $this->old_data[$i]];
+						++$i;
+						++$j;
+					}
+					while ($i < $old_end && $j < $new_end && $this->old_data[$i] == $this->new_data[$j]);
+				}
 			}
 		}
 		
@@ -305,5 +360,13 @@ class Diff
 		}
 		
 		return $hunk;
+	}
+	
+	public function breakIntraline ($data, $start, $end)
+	{
+		$data = array_slice($data, $start, $end - $start);
+		$data = implode('', $data);
+		preg_match_all('/.\n?|\n/', $data, $data, \PREG_PATTERN_ORDER);
+		return $data[0];
 	}
 }
