@@ -268,6 +268,11 @@ class Str
 		
 		while ($sequence_length > 0)
 		{
+			if ($char === false)
+			{
+				$char = substr($string, $byte_pos, $sequence_length);
+			}
+			
 			if (call_user_func($callback, $char, $char_pos, $byte_pos, $sequence_length) === false)
 			{
 				break;
