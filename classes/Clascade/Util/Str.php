@@ -52,13 +52,13 @@ class Str
 		}
 		else
 		{
-			$byte_end = Unicode::bytePos($string, $length, $byte_start);
+			$byte_end = Unicode::bytePos($string, $length, $length >= 0 ? $byte_start : null);
 			
 			if ($byte_end === false)
 			{
 				if ($length < 0)
 				{
-					// The position is before $byte_start.
+					// The position is before the start of the string.
 					
 					return false;
 				}
@@ -67,6 +67,17 @@ class Str
 					// The position is beyond the end of $string.
 					
 					$byte_end = strlen($string);
+				}
+			}
+			elseif ($byte_end < $byte_start)
+			{
+				if ($start < 0)
+				{
+					return '';
+				}
+				else
+				{
+					return false;
 				}
 			}
 		}
