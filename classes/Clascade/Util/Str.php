@@ -97,6 +97,11 @@ class Str
 	
 	public static function indexOf ($haystack, $needle, $offset=null)
 	{
+		if (Unicode::isContinuationByte($needle))
+		{
+			return false;
+		}
+		
 		$offset = ($offset === null ? 0 : Unicode::bytePos($haystack, $offset));
 		$pos = strpos($haystack, $needle, $offset);
 		
@@ -115,6 +120,11 @@ class Str
 	
 	public static function lastIndexOf ($haystack, $needle, $offset=null)
 	{
+		if (Unicode::isContinuationByte($needle))
+		{
+			return false;
+		}
+		
 		if ($offset === null)
 		{
 			$byte_offset = 0;

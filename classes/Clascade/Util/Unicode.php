@@ -306,6 +306,11 @@ class Unicode
 		return $char_pos;
 	}
 	
+	public static function isContinuationByte ($string)
+	{
+		return ((ord($string) & 0b11000000) === 0b10000000);
+	}
+	
 	public static function fromCodePoint ($codepoint)
 	{
 		if ($codepoint < 0x000080)
