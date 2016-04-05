@@ -53,11 +53,22 @@ class Str
 		else
 		{
 			$byte_end = Unicode::bytePos($string, $length, $byte_start);
-		}
-		
-		if ($byte_end === false)
-		{
-			return false;
+			
+			if ($byte_end === false)
+			{
+				if ($length < 0)
+				{
+					// The position is before $byte_start.
+					
+					return false;
+				}
+				else
+				{
+					// The position is beyond the end of $string.
+					
+					$byte_end = strlen($string);
+				}
+			}
 		}
 		
 		return substr($string, $byte_start, $byte_end - $byte_start);
