@@ -265,6 +265,7 @@ class StrTest extends \PHPUnit_Framework_TestCase
 	{
 		$this->assertSame("B", Str::slice("A\x80\x80\x80BA", 4, 1));
 		$this->assertSame("B", Str::slice("A\xf0\x90\x80BA", 2, 1));
+		$this->assertSame("B", Str::slice("AB\xf0\x90\x80A", -3, 1));
 		
 		// The following assertion demonstrates the current
 		// expected behavior when an invalid UTF-8 sequence
@@ -274,7 +275,8 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		// argue that the invalid sequence ought to be replaced
 		// by a Unicode replacement character (0xFFFD) instead.
 		
-		$this->assertSame("\xf0\x90\x80", Str::slice("A\xf0\x90\x80BA", 1, 1));
+		$this->assertSame("\xf0\x90\x80", Str::slice("A\xf0\x90\x80A", 1, 1));
+		$this->assertSame("\xf0\x90\x80", Str::slice("A\xf0\x90\x80A", -2, 1));
 	}
 	
 	public function testCharAt ()
@@ -284,5 +286,82 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame("\xe1\x8f\xa8", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2));
 		$this->assertSame("\xf0\x90\x8c\x83", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3));
 		$this->assertSame(false, Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 4));
+		
+		$this->assertSame("\xf0\x90\x8c\x83", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1));
+		$this->assertSame("\xe1\x8f\xa8", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2));
+		$this->assertSame("\xc6\x81", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -3));
+		$this->assertSame("A", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4));
+		$this->assertSame(false, Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -5));
+		
+		// Invalid UTF-8 sequences.
+		
+		$this->assertSame("B", Str::charAt("A\x80\x80\x80BA", 4));
+		$this->assertSame("B", Str::charAt("A\xf0\x90\x80BA", 2));
+		$this->assertSame("B", Str::charAt("AB\xf0\x90\x80A", -3, 1));
+		$this->assertSame("\xf0\x90\x80", Str::charAt("A\xf0\x90\x80A", 1));
+		$this->assertSame("\xf0\x90\x80", Str::charAt("A\xf0\x90\x80A", -2));
+	}
+	
+	public function testIndexOf ()
+	{
+		$this->assertSame(0, Str::indexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A"));
+		$this->assertSame(1, Str::indexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xc6\x81"));
+		$this->assertSame(2, Str::indexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xe1\x8f\xa8"));
+		$this->assertSame(3, Str::indexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xf0\x90\x8c\x83"));
+		$this->assertSame(false, Str::indexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "B"));
+		
+		$this->assertSame(1, Str::indexOf("A\xc6\x81A\xc6\x81A", "\xc6\x81"));
+		
+		// Invalid needles (beginning with a continuation byte).
+		
+		$this->assertSame(false, Str::indexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\x8f\xa8"));
+		
+		// Invalid UTF-8 sequences in the haystacks.
+		
+		$this->assertSame(4, Str::indexOf("A\x80\x80\x80BA", "B"));
+		$this->assertSame(2, Str::indexOf("A\xf0\x90\x80BA", "B"));
+		$this->assertSame(1, Str::indexOf("A\xf0\x90\x80BA", "\xf0\x90\x80"));
+	}
+	
+	public function testLastIndexOf ()
+	{
+		$this->assertSame(0, Str::lastIndexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A"));
+		$this->assertSame(1, Str::lastIndexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xc6\x81"));
+		$this->assertSame(2, Str::lastIndexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xe1\x8f\xa8"));
+		$this->assertSame(3, Str::lastIndexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xf0\x90\x8c\x83"));
+		$this->assertSame(false, Str::lastIndexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "B"));
+		
+		$this->assertSame(3, Str::lastIndexOf("A\xc6\x81A\xc6\x81A", "\xc6\x81"));
+		
+		// Invalid needles (beginning with a continuation byte).
+		
+		$this->assertSame(false, Str::lastIndexOf("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\x8f\xa8"));
+		
+		// Invalid UTF-8 sequences in the haystacks.
+		
+		$this->assertSame(8, Str::lastIndexOf("A\x80\x80\x80B\x80\x80\x80B\x80\x80\x80A", "B"));
+		$this->assertSame(4, Str::lastIndexOf("A\xf0\x90\x80B\xf0\x90\x80B\xf0\x90\x80A", "B"));
+		$this->assertSame(3, Str::lastIndexOf("A\xf0\x90\x80A\xf0\x90\x80A", "\xf0\x90\x80"));
+	}
+	
+	public function testContains ()
+	{
+		$this->assertSame(true, Str::contains("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A"));
+		$this->assertSame(true, Str::contains("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xc6\x81"));
+		$this->assertSame(true, Str::contains("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xe1\x8f\xa8"));
+		$this->assertSame(true, Str::contains("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xf0\x90\x8c\x83"));
+		$this->assertSame(false, Str::contains("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "B"));
+		
+		// Str::contains should be safe for byte strings and
+		// shouldn't care about character boundaries, so needles
+		// can be anything (unlike with Str::indexOf()).
+		
+		$this->assertSame(true, Str::contains("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\x8f\xa8"));
+		
+		// Invalid UTF-8 sequences in the haystacks.
+		
+		$this->assertSame(true, Str::contains("A\x80\x80\x80BA", "B"));
+		$this->assertSame(true, Str::contains("A\xf0\x90\x80BA", "B"));
+		$this->assertSame(true, Str::contains("A\xf0\x90\x80BA", "\xf0\x90\x80"));
 	}
 }
