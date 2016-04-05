@@ -226,6 +226,11 @@ class Str
 		
 		while ($sequence_length > 0)
 		{
+			if ($char === false)
+			{
+				$char = substr($string, $byte_pos, $sequence_length);
+			}
+			
 			if ($key_col >= $split_length)
 			{
 				// Begin the next chunk.
