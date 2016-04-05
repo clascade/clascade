@@ -213,6 +213,10 @@ class Str
 		{
 			$split_length = 1;
 		}
+		elseif ($split_length < 1)
+		{
+			return false;
+		}
 		
 		$chunks = [];
 		$byte_pos = 0;
