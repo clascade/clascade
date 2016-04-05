@@ -540,4 +540,47 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame(["A", "\xf0", "\x80", "\x80"], Str::chunk("A\xf0\x80\x80"));
 		$this->assertSame(["A", "\xf0", "\x80"], Str::chunk("A\xf0\x80"));
 	}
+	
+	public function testApply ()
+	{
+		$results = [];
+		Str::apply("", function ($char, $char_pos, $byte_pos, $sequence_length) use (&$results)
+		{
+			$results[] = [$char, $char_pos, $byte_pos, $sequence_length];
+		});
+		
+		$this->assertSame([], $results);
+		
+		$results = [];
+		Str::apply("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", function ($char, $char_pos, $byte_pos, $sequence_length) use (&$results)
+		{
+			$results[] = [$char, $char_pos, $byte_pos, $sequence_length];
+		});
+		
+		$this->assertSame(
+		[
+			["A", 0, 0, 1],
+			["\xc6\x81", 1, 1, 2],
+			["\xe1\x8f\xa8", 2, 3, 3],
+			["\xf0\x90\x8c\x83", 3, 6, 4],
+		], $results);
+		
+		$results = [];
+		Str::apply("A\xf0\x90\x80A\xf0\x8f\xbf\xbfA", function ($char, $char_pos, $byte_pos, $sequence_length) use (&$results)
+		{
+			$results[] = [$char, $char_pos, $byte_pos, $sequence_length];
+		});
+		
+		$this->assertSame(
+		[
+			["A", 0, 0, 1],
+			["\xf0\x90\x80", 1, 1, 3],
+			["A", 2, 4, 1],
+			["\xf0", 3, 5, 1],
+			["\x8f", 4, 6, 1],
+			["\xbf", 5, 7, 1],
+			["\xbf", 6, 8, 1],
+			["A", 7, 9, 1],
+		], $results);
+	}
 }
