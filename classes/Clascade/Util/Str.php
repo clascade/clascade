@@ -175,6 +175,11 @@ class Str
 	
 	public static function startsWith ($haystack, $needle)
 	{
+		if (strlen($needle) == 0)
+		{
+			return true;
+		}
+		
 		return (substr($haystack, 0, strlen($needle)) === $needle);
 	}
 	
