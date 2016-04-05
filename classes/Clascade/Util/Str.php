@@ -41,6 +41,11 @@ class Str
 	{
 		$byte_start = Unicode::bytePos($string, $start);
 		
+		if ($byte_start === false)
+		{
+			return false;
+		}
+		
 		if ($length === null)
 		{
 			$byte_end = strlen($string);
