@@ -187,6 +187,11 @@ class Str
 	
 	public static function endsWith ($haystack, $needle)
 	{
+		if (strlen($needle) == 0)
+		{
+			return true;
+		}
+		
 		return (substr($haystack, -strlen($needle)) === $needle);
 	}
 	
