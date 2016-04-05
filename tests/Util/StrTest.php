@@ -166,10 +166,8 @@ class StrTest extends \PHPUnit_Framework_TestCase
 			// Truncated overlong (invalid) sequences.
 			
 			"A\xe0\x80" => 3,
-			"A\xe0" => 2,
 			"A\xf0\x80\x80" => 4,
 			"A\xf0\x80" => 3,
-			"A\xf0" => 2,
 		]);
 	}
 	
@@ -267,7 +265,7 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame("B", Str::slice("A\xf0\x90\x80BA", 2, 1));
 		$this->assertSame("B", Str::slice("AB\xf0\x90\x80A", -3, 1));
 		
-		// The following assertion demonstrates the current
+		// The following assertions demonstrate the current
 		// expected behavior when an invalid UTF-8 sequence
 		// appears within a slice: the invalid sequence is
 		// included in the return value unmodified. The
@@ -277,6 +275,11 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		
 		$this->assertSame("\xf0\x90\x80", Str::slice("A\xf0\x90\x80A", 1, 1));
 		$this->assertSame("\xf0\x90\x80", Str::slice("A\xf0\x90\x80A", -2, 1));
+		
+		$this->assertSame("\xf0", Str::slice("A\xf0\x8f\xbf\xbfA", 1, 1));
+		$this->assertSame("\x8f", Str::slice("A\xf0\x8f\xbf\xbfA", 2, 1));
+		$this->assertSame("\xbf", Str::slice("A\xf0\x8f\xbf\xbfA", 3, 1));
+		$this->assertSame("\xbf", Str::slice("A\xf0\x8f\xbf\xbfA", 4, 1));
 	}
 	
 	public function testCharAt ()
@@ -300,6 +303,11 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame("B", Str::charAt("AB\xf0\x90\x80A", -3, 1));
 		$this->assertSame("\xf0\x90\x80", Str::charAt("A\xf0\x90\x80A", 1));
 		$this->assertSame("\xf0\x90\x80", Str::charAt("A\xf0\x90\x80A", -2));
+		
+		$this->assertSame("\xf0", Str::charAt("A\xf0\x8f\xbf\xbfA", 1));
+		$this->assertSame("\x8f", Str::charAt("A\xf0\x8f\xbf\xbfA", 2));
+		$this->assertSame("\xbf", Str::charAt("A\xf0\x8f\xbf\xbfA", 3));
+		$this->assertSame("\xbf", Str::charAt("A\xf0\x8f\xbf\xbfA", 4));
 	}
 	
 	public function testIndexOf ()
@@ -363,5 +371,173 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame(true, Str::contains("A\x80\x80\x80BA", "B"));
 		$this->assertSame(true, Str::contains("A\xf0\x90\x80BA", "B"));
 		$this->assertSame(true, Str::contains("A\xf0\x90\x80BA", "\xf0\x90\x80"));
+	}
+	
+	public function testStartsWith ()
+	{
+		$this->assertSame(true, Str::startsWith("", ""));
+		$this->assertSame(true, Str::startsWith("A", ""));
+		$this->assertSame(false, Str::startsWith("", "A"));
+		$this->assertSame(true, Str::startsWith("A", "A"));
+		
+		$this->assertSame(true, Str::startsWith("AB", "A"));
+		$this->assertSame(false, Str::startsWith("BA", "A"));
+		
+		$this->assertSame(true, Str::startsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A"));
+		$this->assertSame(true, Str::startsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A\xc6\x81"));
+		$this->assertSame(true, Str::startsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A\xc6"));
+		$this->assertSame(true, Str::startsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83"));
+		$this->assertSame(false, Str::startsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83A"));
+		$this->assertSame(true, Str::startsWith("\x80A", "\x80"));
+		$this->assertSame(true, Str::startsWith("\x80A", "\x80A"));
+		$this->assertSame(false, Str::startsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xc6\x81"));
+		$this->assertSame(false, Str::startsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "B"));
+		$this->assertSame(false, Str::startsWith("A\xc6\x81B", "B"));
+	}
+	
+	public function testEndsWith ()
+	{
+		$this->assertSame(true, Str::endsWith("", ""));
+		$this->assertSame(true, Str::endsWith("A", ""));
+		$this->assertSame(false, Str::endsWith("", "A"));
+		$this->assertSame(true, Str::endsWith("A", "A"));
+		
+		$this->assertSame(true, Str::endsWith("AB", "B"));
+		$this->assertSame(false, Str::endsWith("BA", "B"));
+		
+		$this->assertSame(true, Str::endsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\xf0\x90\x8c\x83"));
+		$this->assertSame(true, Str::endsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\x8f\xa8\xf0\x90\x8c\x83"));
+		$this->assertSame(true, Str::endsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\x8c\x83"));
+		$this->assertSame(true, Str::endsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83"));
+		$this->assertSame(false, Str::endsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "AA\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83"));
+		$this->assertSame(true, Str::endsWith("A\x80", "\x80"));
+		$this->assertSame(true, Str::endsWith("A\x80", "A\x80"));
+		$this->assertSame(false, Str::endsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "\x90\x8c"));
+		$this->assertSame(false, Str::endsWith("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "B"));
+		$this->assertSame(false, Str::endsWith("A\xc6\x81B", "A"));
+	}
+	
+	public function testChunk_smoke ()
+	{
+		$this->assertSame([], Str::chunk(''));
+		$this->assertSame(['A'], Str::chunk('A'));
+		$this->assertSame(['A', 'B'], Str::chunk('AB'));
+		$this->assertSame(['AB'], Str::chunk('AB', 2));
+		$this->assertSame(['AB'], Str::chunk('AB', 3));
+		$this->assertSame(['AB', 'C'], Str::chunk('ABC', 2));
+		$this->assertSame(['AB', 'CD', 'EF'], Str::chunk('ABCDEF', 2));
+		$this->assertSame(false, Str::chunk('AB', 0));
+		$this->assertSame(false, Str::chunk('AB', -1));
+		
+		$this->assertSame(["A", "\xc6\x81", "\xe1\x8f\xa8", "\xf0\x90\x8c\x83"], Str::chunk("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83"));
+		$this->assertSame(["A\xc6\x81", "\xe1\x8f\xa8\xf0\x90\x8c\x83"], Str::chunk("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2));
+		$this->assertSame(["A\xc6\x81\xe1\x8f\xa8", "\xf0\x90\x8c\x83"], Str::chunk("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3));
+		$this->assertSame(["A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83"], Str::chunk("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 4));
+		$this->assertSame(["A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83"], Str::chunk("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 5));
+	}
+	
+	public function testChunk_validCodepoints ()
+	{
+		// First valid (non-overlong) codepoints for each sequence length.
+		
+		$this->assertSame(["A", "\x00", "A"], Str::chunk("A\x00A"));
+		$this->assertSame(["A", "\xc2\x80", "A"], Str::chunk("A\xc2\x80A"));
+		$this->assertSame(["A", "\xe0\xa0\x80", "A"], Str::chunk("A\xe0\xa0\x80A"));
+		$this->assertSame(["A", "\xf0\x90\x80\x80", "A"], Str::chunk("A\xf0\x90\x80\x80A"));
+		
+		// Last valid codepoints for each sequence length.
+		
+		$this->assertSame(["A", "\x7f", "A"], Str::chunk("A\x7fA"));
+		$this->assertSame(["A", "\xdf\xbf", "A"], Str::chunk("A\xdf\xbfA"));
+		$this->assertSame(["A", "\xef\xbf\xbf", "A"], Str::chunk("A\xef\xbf\xbfA"));
+		$this->assertSame(["A", "\xf4\x8f\xbf\xbf", "A"], Str::chunk("A\xf4\x8f\xbf\xbfA"));
+		
+		// Surrogate boundaries.
+		
+		$this->assertSame(["A", "\xed\x9f\xbf", "A"], Str::chunk("A\xed\x9f\xbfA"));
+		$this->assertSame(["A", "\xee\x80\x80", "A"], Str::chunk("A\xee\x80\x80A"));
+	}
+	
+	public function testChunk_invalidCodepoints ()
+	{
+		// First codepoint above maximum (detectable at second byte).
+		
+		$this->assertSame(["A", "\xf4", "\x90", "\x80", "\x80", "A"], Str::chunk("A\xf4\x90\x80\x80A"));
+		
+		// First codepoint above maximum that is detectable at first byte.
+		
+		$this->assertSame(["A", "\xf5", "\x80", "\x80", "\x80", "A"], Str::chunk("A\xf5\x80\x80\x80A"));
+		
+		// Invalid sequence lengths.
+		
+		$this->assertSame(["A", "\xf8", "\x88", "\x80", "\x80", "\x80", "A"], Str::chunk("A\xf8\x88\x80\x80\x80A"));
+		$this->assertSame(["A", "\xfc", "\x81", "\x80", "\x80", "\x80", "\x80", "A"], Str::chunk("A\xfc\x81\x80\x80\x80\x80A"));
+		
+		// Surrogate boundaries (detectable at second byte).
+		
+		$this->assertSame(["A", "\xed", "\xa0", "\x80", "A"], Str::chunk("A\xed\xa0\x80A"));
+		$this->assertSame(["A", "\xed", "\xbf", "\xbf", "A"], Str::chunk("A\xed\xbf\xbfA"));
+	}
+	
+	public function testChunk_overlong ()
+	{
+		// Codepoint 0 encoded in each multibyte length (overlong).
+		
+		$this->assertSame(["A", "\xc0", "\x80", "A"], Str::chunk("A\xc0\x80A"));
+		$this->assertSame(["A", "\xe0", "\x80", "\x80", "A"], Str::chunk("A\xe0\x80\x80A"));
+		$this->assertSame(["A", "\xf0", "\x80", "\x80", "\x80", "A"], Str::chunk("A\xf0\x80\x80\x80A"));
+		
+		// Last overlong sequence of each length.
+		
+		$this->assertSame(["A", "\xc1", "\xbf", "A"], Str::chunk("A\xc1\xbfA"));
+		$this->assertSame(["A", "\xe0", "\x9f", "\xbf", "A"], Str::chunk("A\xe0\x9f\xbfA"));
+		$this->assertSame(["A", "\xf0", "\x8f", "\xbf", "\xbf", "A"], Str::chunk("A\xf0\x8f\xbf\xbfA"));
+	}
+	
+	public function testChunk_malformed ()
+	{
+		// Unexpected continuation bytes.
+		
+		$this->assertSame(["A", "\x80", "A"], Str::chunk("A\x80A"));
+		$this->assertSame(["A", "\x80", "\x80", "A"], Str::chunk("A\x80\x80A"));
+		$this->assertSame(["A", "\x80", "\x80", "\x80", "A"], Str::chunk("A\x80\x80\x80A"));
+		$this->assertSame(["A", "\x80", "\x80", "\x80", "\x80", "A"], Str::chunk("A\x80\x80\x80\x80A"));
+		$this->assertSame(["A", "\xbf", "A"], Str::chunk("A\xbfA"));
+		$this->assertSame(["A", "\xbf", "\xbf", "A"], Str::chunk("A\xbf\xbfA"));
+		$this->assertSame(["A", "\xbf", "\xbf", "\xbf", "A"], Str::chunk("A\xbf\xbf\xbfA"));
+		$this->assertSame(["A", "\xbf", "\xbf", "\xbf", "\xbf", "A"], Str::chunk("A\xbf\xbf\xbf\xbfA"));
+		
+		// Missing continuation bytes.
+		
+		$this->assertSame(["A", "\xc2", "A"], Str::chunk("A\xc2A"));
+		$this->assertSame(["A", "\xe0\xa0", "A"], Str::chunk("A\xe0\xa0A"));
+		$this->assertSame(["A", "\xe0", "A"], Str::chunk("A\xe0A"));
+		$this->assertSame(["A", "\xf0\x90\x80", "A"], Str::chunk("A\xf0\x90\x80A"));
+		$this->assertSame(["A", "\xf0\x90", "A"], Str::chunk("A\xf0\x90A"));
+		$this->assertSame(["A", "\xf0", "A"], Str::chunk("A\xf0A"));
+		
+		// Bytes that cannot exist in valid UTF-8.
+		
+		$this->assertSame(["A", "\xfe", "A"], Str::chunk("A\xfeA"));
+		$this->assertSame(["A", "\xff", "A"], Str::chunk("A\xffA"));
+		$this->assertSame(["A", "\xfe", "\xfe", "\xff", "\xff", "A"], Str::chunk("A\xfe\xfe\xff\xffA"));
+	}
+	
+	public function testChunk_truncated ()
+	{
+		// Sequences that are valid up to the point of truncation.
+		
+		$this->assertSame(["A", "\xc2"], Str::chunk("A\xc2"));
+		$this->assertSame(["A", "\xe0\xa0"], Str::chunk("A\xe0\xa0"));
+		$this->assertSame(["A", "\xe0"], Str::chunk("A\xe0"));
+		$this->assertSame(["A", "\xf0\x90\x80"], Str::chunk("A\xf0\x90\x80"));
+		$this->assertSame(["A", "\xf0\x90"], Str::chunk("A\xf0\x90"));
+		$this->assertSame(["A", "\xf0"], Str::chunk("A\xf0"));
+		
+		// Truncated overlong (invalid) sequences.
+		
+		$this->assertSame(["A", "\xe0", "\x80"], Str::chunk("A\xe0\x80"));
+		$this->assertSame(["A", "\xf0", "\x80", "\x80"], Str::chunk("A\xf0\x80\x80"));
+		$this->assertSame(["A", "\xf0", "\x80"], Str::chunk("A\xf0\x80"));
 	}
 }
