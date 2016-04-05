@@ -4,14 +4,12 @@ namespace Clascade\Util;
 
 class StrTest extends \PHPUnit_Framework_TestCase
 {
-	//== Str::length ==//
-	
 	private function assertStrLengths ($tests)
 	{
 		foreach ($tests as $string => $length)
 		{
 			$message = 'Input: "'.preg_replace('/../', '\\x$0', bin2hex($string)).'"';
-			$this->assertEquals($length, Str::length($string), $message);
+			$this->assertSame($length, Str::length($string), $message);
 		}
 	}
 	
@@ -175,105 +173,98 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		]);
 	}
 	
-	//== Str::slice ==//
-	
 	public function testSlice_ascii ()
 	{
-		$this->assertEquals('', Str::slice('', 0));
-		$this->assertEquals(false, Str::slice('', 1));
-		$this->assertEquals(false, Str::slice('', -1));
+		$this->assertSame(false, Str::slice('', 0));
+		$this->assertSame(false, Str::slice('', 1));
+		$this->assertSame(false, Str::slice('', -1));
 		
-		$this->assertEquals('abc', Str::slice('abc', 0));
-		$this->assertEquals('bc', Str::slice('abc', 1));
-		$this->assertEquals('c', Str::slice('abc', 2));
-		$this->assertEquals('', Str::slice('abc', 3));
-		$this->assertEquals(false, Str::slice('abc', 4));
+		$this->assertSame('abc', Str::slice('abc', 0));
+		$this->assertSame('bc', Str::slice('abc', 1));
+		$this->assertSame('c', Str::slice('abc', 2));
+		$this->assertSame(false, Str::slice('abc', 3));
 		
-		$this->assertEquals('c', Str::slice('abc', -1));
-		$this->assertEquals('bc', Str::slice('abc', -2));
-		$this->assertEquals('abc', Str::slice('abc', -3));
-		$this->assertEquals(false, Str::slice('abc', -4));
+		$this->assertSame('c', Str::slice('abc', -1));
+		$this->assertSame('bc', Str::slice('abc', -2));
+		$this->assertSame('abc', Str::slice('abc', -3));
+		$this->assertSame(false, Str::slice('abc', -4));
 		
-		$this->assertEquals('ab', Str::slice('abc', 0, -1));
-		$this->assertEquals('a', Str::slice('abc', 0, -2));
-		$this->assertEquals('', Str::slice('abc', 0, -3));
-		$this->assertEquals(false, Str::slice('abc', 0, -4));
+		$this->assertSame('ab', Str::slice('abc', 0, -1));
+		$this->assertSame('a', Str::slice('abc', 0, -2));
+		$this->assertSame('', Str::slice('abc', 0, -3));
+		$this->assertSame(false, Str::slice('abc', 0, -4));
 		
-		$this->assertEquals('b', Str::slice('abc', 1, -1));
-		$this->assertEquals('', Str::slice('abc', 1, -2));
-		$this->assertEquals(false, Str::slice('abc', 1, -3));
+		$this->assertSame('b', Str::slice('abc', 1, -1));
+		$this->assertSame('', Str::slice('abc', 1, -2));
+		$this->assertSame(false, Str::slice('abc', 1, -3));
 		
-		$this->assertEquals('', Str::slice('abc', -1, -1));
-		$this->assertEquals('', Str::slice('abc', -1, -2));
-		$this->assertEquals('b', Str::slice('abc', -2, -1));
-		$this->assertEquals('', Str::slice('abc', -2, -2));
-		$this->assertEquals('', Str::slice('abc', -2, -3));
-		$this->assertEquals('ab', Str::slice('abc', -3, -1));
-		$this->assertEquals('a', Str::slice('abc', -3, -2));
-		$this->assertEquals('', Str::slice('abc', -3, -3));
-		$this->assertEquals('', Str::slice('abc', -3, -4));
+		$this->assertSame('', Str::slice('abc', -1, -1));
+		$this->assertSame('', Str::slice('abc', -1, -2));
+		$this->assertSame('b', Str::slice('abc', -2, -1));
+		$this->assertSame('', Str::slice('abc', -2, -2));
+		$this->assertSame('', Str::slice('abc', -2, -3));
+		$this->assertSame('ab', Str::slice('abc', -3, -1));
+		$this->assertSame('a', Str::slice('abc', -3, -2));
+		$this->assertSame('', Str::slice('abc', -3, -3));
+		$this->assertSame(false, Str::slice('abc', -3, -4));
 		
-		$this->assertEquals('b', Str::slice('abc', 1, 1));
-		$this->assertEquals('c', Str::slice('abc', 2, 1));
-		$this->assertEquals('c', Str::slice('abc', 2, 2));
+		$this->assertSame('b', Str::slice('abc', 1, 1));
+		$this->assertSame('c', Str::slice('abc', 2, 1));
+		$this->assertSame('c', Str::slice('abc', 2, 2));
 	}
 	
 	public function testSlice_multibyte ()
 	{
-		$this->assertEquals("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0));
-		$this->assertEquals("\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1));
-		$this->assertEquals("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2));
-		$this->assertEquals("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 4));
-		$this->assertEquals(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 5));
+		$this->assertSame("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0));
+		$this->assertSame("\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1));
+		$this->assertSame("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2));
+		$this->assertSame("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3));
+		$this->assertSame(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 4));
 		
-		$this->assertEquals("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1));
-		$this->assertEquals("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2));
-		$this->assertEquals("\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -3));
-		$this->assertEquals("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4));
-		$this->assertEquals(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -5));
+		$this->assertSame("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1));
+		$this->assertSame("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2));
+		$this->assertSame("\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -3));
+		$this->assertSame("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4));
+		$this->assertSame(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -5));
 		
-		$this->assertEquals("A\xc6\x81\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -1));
-		$this->assertEquals("A\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -2));
-		$this->assertEquals("A", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -3));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -4));
-		$this->assertEquals(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -5));
+		$this->assertSame("A\xc6\x81\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -1));
+		$this->assertSame("A\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -2));
+		$this->assertSame("A", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -3));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -4));
+		$this->assertSame(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0, -5));
 		
-		$this->assertEquals("\xc6\x81\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -1));
-		$this->assertEquals("\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -2));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -3));
-		$this->assertEquals(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -4));
+		$this->assertSame("\xc6\x81\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -1));
+		$this->assertSame("\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -2));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -3));
+		$this->assertSame(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, -4));
 		
-		$this->assertEquals("\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, -1));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, -2));
-		$this->assertEquals(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, -3));
+		$this->assertSame("\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, -1));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, -2));
+		$this->assertSame(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, -3));
 		
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1, -1));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1, -2));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1, -1));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1, -2));
+		$this->assertSame("\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2, -1));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2, -2));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2, -3));
+		$this->assertSame("A\xc6\x81\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -1));
+		$this->assertSame("A\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -2));
+		$this->assertSame("A", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -3));
+		$this->assertSame("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -4));
+		$this->assertSame(false, Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -5));
 		
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1, -1));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -1, -2));
-		$this->assertEquals("\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2, -1));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2, -2));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -2, -3));
-		$this->assertEquals("A\xc6\x81\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -1));
-		$this->assertEquals("A\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -2));
-		$this->assertEquals("A", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -3));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -4));
-		$this->assertEquals("", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", -4, -5));
-		
-		$this->assertEquals("\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, 1));
-		$this->assertEquals("\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, 1));
-		$this->assertEquals("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, 2));
-		$this->assertEquals("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, 3));
-		$this->assertEquals("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3, 1));
-		$this->assertEquals("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3, 2));
+		$this->assertSame("\xc6\x81", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1, 1));
+		$this->assertSame("\xe1\x8f\xa8", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, 1));
+		$this->assertSame("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, 2));
+		$this->assertSame("\xe1\x8f\xa8\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2, 3));
+		$this->assertSame("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3, 1));
+		$this->assertSame("\xf0\x90\x8c\x83", Str::slice("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3, 2));
 	}
 	
 	public function testSlice_invalid ()
 	{
-		$this->assertEquals("B", Str::slice("A\x80\x80\x80BA", 4, 1));
-		$this->assertEquals("B", Str::slice("A\xf0\x90\x80BA", 2, 1));
+		$this->assertSame("B", Str::slice("A\x80\x80\x80BA", 4, 1));
+		$this->assertSame("B", Str::slice("A\xf0\x90\x80BA", 2, 1));
 		
 		// The following assertion demonstrates the current
 		// expected behavior when an invalid UTF-8 sequence
@@ -283,6 +274,15 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		// argue that the invalid sequence ought to be replaced
 		// by a Unicode replacement character (0xFFFD) instead.
 		
-		$this->assertEquals("\xf0\x90\x80", Str::slice("A\xf0\x90\x80BA", 1, 1));
+		$this->assertSame("\xf0\x90\x80", Str::slice("A\xf0\x90\x80BA", 1, 1));
+	}
+	
+	public function testCharAt ()
+	{
+		$this->assertSame("A", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 0));
+		$this->assertSame("\xc6\x81", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 1));
+		$this->assertSame("\xe1\x8f\xa8", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 2));
+		$this->assertSame("\xf0\x90\x8c\x83", Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 3));
+		$this->assertSame(false, Str::charAt("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", 4));
 	}
 }
