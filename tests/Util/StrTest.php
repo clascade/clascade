@@ -681,4 +681,77 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame("ABC39", Str::incSuffix("ABC42", -3));
 		$this->assertSame("ABC9999999999", Str::incSuffix("ABC10000000000", -1));
 	}
+	
+	public function testUpper ()
+	{
+		$this->assertSame("", Str::upper(""));
+		$this->assertSame("AA", Str::upper("aa"));
+		$this->assertSame("AA", Str::upper("AA"));
+		$this->assertSame("ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", Str::upper("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"));
+		$this->assertSame(' !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~', Str::upper(' !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'));
+		$this->assertSame("\xc3\x80\xc8\x80\xd0\x91\xe1\xb8\x82\xe1\x82\xa2\xea\x99\x80", Str::upper("\xc3\xa0\xc8\x81\xd0\xb1\xe1\xb8\x83\xe2\xb4\x82\xea\x99\x81"));
+		
+		// Ligatures.
+		
+		$this->assertSame("\xc3\x86", Str::upper("\xc3\xa6")); // ae => AE
+		$this->assertSame("\xc4\xb2", Str::upper("\xc4\xb3")); // ij => IJ
+		$this->assertSame("\xc5\x92", Str::upper("\xc5\x93")); // oe => OE
+		$this->assertSame("\xc7\x84", Str::upper("\xc7\x86")); // dz*=> DZ*
+		$this->assertSame("\xc7\x84", Str::upper("\xc7\x85")); // Dz*=> DZ*
+		$this->assertSame("\xc7\x87", Str::upper("\xc7\x89")); // lj => LJ
+		$this->assertSame("\xc7\x87", Str::upper("\xc7\x88")); // Lj => LJ
+		$this->assertSame("\xc7\x8a", Str::upper("\xc7\x8c")); // nj => NJ
+		$this->assertSame("\xc7\x8a", Str::upper("\xc7\x8b")); // Nj => NJ
+		$this->assertSame("\xc7\xa2", Str::upper("\xc7\xa3")); // ae*=> AE*
+		$this->assertSame("\xc7\xb1", Str::upper("\xc7\xb3")); // dz => DZ
+		$this->assertSame("\xc7\xb1", Str::upper("\xc7\xb2")); // Dz => DZ
+		$this->assertSame("\xc7\xbc", Str::upper("\xc7\xbd")); // ae*=> AE*
+		$this->assertSame("\xd1\xb8", Str::upper("\xd1\xb9")); // oy => Oy (not OY)
+		$this->assertSame("\xd3\x94", Str::upper("\xd3\x95")); // ae => AE
+		$this->assertSame("\xd3\xb8", Str::upper("\xd3\xb9")); // bI => BI
+		
+		// Sigma.
+		
+		$this->assertSame("\xce\xa3", Str::upper("\xcf\x83"));
+		$this->assertSame("\xce\xa3\xce\xa3", Str::upper("\xce\xa3\xce\xa3"));
+		$this->assertSame("\xce\xa3\xce\xa3", Str::upper("\xcf\x83\xcf\x83"));
+		$this->assertSame("\xce\xa3\xce\xa3", Str::upper("\xcf\x82\xcf\x82"));
+	}
+	
+	public function testLower ()
+	{
+		$this->assertSame("", Str::lower(""));
+		$this->assertSame("aa", Str::lower("AA"));
+		$this->assertSame("aa", Str::lower("aa"));
+		$this->assertSame("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789", Str::lower("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"));
+		$this->assertSame(' !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~', Str::lower(' !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'));
+		$this->assertSame("\xc3\xa0\xc8\x81\xd0\xb1\xe1\xb8\x83\xe2\xb4\x82\xea\x99\x81", Str::lower("\xc3\x80\xc8\x80\xd0\x91\xe1\xb8\x82\xe1\x82\xa2\xea\x99\x80"));
+		
+		// Ligatures.
+		
+		$this->assertSame("\xc3\xa6", Str::lower("\xc3\x86")); // AE => ae
+		$this->assertSame("\xc4\xb3", Str::lower("\xc4\xb2")); // IJ => ij
+		$this->assertSame("\xc5\x93", Str::lower("\xc5\x92")); // OE => oe
+		$this->assertSame("\xc7\x86", Str::lower("\xc7\x84")); // DZ*=> dz*
+		$this->assertSame("\xc7\x86", Str::lower("\xc7\x85")); // Dz*=> dz*
+		$this->assertSame("\xc7\x89", Str::lower("\xc7\x87")); // LJ => lj
+		$this->assertSame("\xc7\x89", Str::lower("\xc7\x88")); // Lj => lj
+		$this->assertSame("\xc7\x8c", Str::lower("\xc7\x8a")); // NJ => nj
+		$this->assertSame("\xc7\x8c", Str::lower("\xc7\x8b")); // Nj => nj
+		$this->assertSame("\xc7\xa3", Str::lower("\xc7\xa2")); // AE*=> ae*
+		$this->assertSame("\xc7\xb3", Str::lower("\xc7\xb1")); // DZ => dz
+		$this->assertSame("\xc7\xb3", Str::lower("\xc7\xb2")); // Dz => dz
+		$this->assertSame("\xc7\xbd", Str::lower("\xc7\xbc")); // AE*=> ae*
+		$this->assertSame("\xd1\xb9", Str::lower("\xd1\xb8")); // Oy => oy
+		$this->assertSame("\xd3\x95", Str::lower("\xd3\x94")); // AE => ae
+		$this->assertSame("\xd3\xb9", Str::lower("\xd3\xb8")); // BI => bI (not bi)
+		
+		// Sigma.
+		
+		$this->assertSame("\xcf\x83", Str::lower("\xce\xa3"));
+		$this->assertSame("\xcf\x83\xcf\x82", Str::lower("\xce\xa3\xce\xa3"));
+		$this->assertSame("\xcf\x83\xcf\x83", Str::lower("\xcf\x83\xcf\x83"));
+		$this->assertSame("\xcf\x82\xcf\x82", Str::lower("\xcf\x82\xcf\x82"));
+		$this->assertSame("abc\xcf\x82 abc\xcf\x82 (\xcf\x83\xcf\x82) \xcf\x83 a", Str::lower("ABC\xce\xa3 abc\xce\xa3 (\xce\xa3\xce\xa3) \xce\xa3 A"));
+	}
 }
