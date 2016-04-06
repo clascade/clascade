@@ -583,4 +583,102 @@ class StrTest extends \PHPUnit_Framework_TestCase
 			["A", 7, 9, 1],
 		], $results);
 	}
+	
+	public function testEquals ()
+	{
+		$this->assertSame(true, Str::equals("", ""));
+		$this->assertSame(true, Str::equals("A", "A"));
+		$this->assertSame(false, Str::equals("A", ""));
+		$this->assertSame(false, Str::equals("", "A"));
+		$this->assertSame(false, Str::equals("A", "a"));
+		$this->assertSame(true, Str::equals("ABC", "ABC"));
+		$this->assertSame(false, Str::equals("ABC", " ABC"));
+		$this->assertSame(false, Str::equals(" ABC", "ABC"));
+		$this->assertSame(false, Str::equals("ABC", "ABC "));
+		$this->assertSame(false, Str::equals("ABC ", "ABC"));
+		$this->assertSame(true, Str::equals(" ABC ", " ABC "));
+		$this->assertSame(true, Str::equals("\x00ABC", "\x00ABC"));
+		$this->assertSame(false, Str::equals("\x00ABC", "\x00abc"));
+		$this->assertSame(true, Str::equals("A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83", "A\xc6\x81\xe1\x8f\xa8\xf0\x90\x8c\x83"));
+		$this->assertSame(true, Str::equals("A\x80A\x80A", "A\x80A\x80A"));
+	}
+	
+	public function testBegin ()
+	{
+		$this->assertSame("", Str::begin("", ""));
+		$this->assertSame("A", Str::begin("A", ""));
+		$this->assertSame("A", Str::begin("", "A"));
+		$this->assertSame("\x00A", Str::begin("A", "\x00"));
+		$this->assertSame("A\x00", Str::begin("\x00", "A"));
+		$this->assertSame("BA", Str::begin("A", "B"));
+		$this->assertSame("CAB", Str::begin("AB", "C"));
+		$this->assertSame("CDAB", Str::begin("AB", "CD"));
+		$this->assertSame("B\xbfB\xbfBA\x80A\x80A", Str::begin("A\x80A\x80A", "B\xbfB\xbfB"));
+		$this->assertSame("A\x80CA\x80B\x80C", Str::begin("A\x80B\x80C", "A\x80C"));
+		$this->assertSame("B\x80CA\x80B\x80C", Str::begin("A\x80B\x80C", "B\x80C"));
+		$this->assertSame("ABCAB", Str::begin("AB", "ABC"));
+		
+		$this->assertSame("A", Str::begin("A", "A"));
+		$this->assertSame("\x00", Str::begin("\x00", "\x00"));
+		$this->assertSame("AB", Str::begin("AB", "AB"));
+		$this->assertSame("ABC", Str::begin("ABC", "AB"));
+		$this->assertSame("A\x80B\x80C", Str::begin("A\x80B\x80C", "A\x80B"));
+	}
+	
+	public function testFinish ()
+	{
+		$this->assertSame("", Str::finish("", ""));
+		$this->assertSame("A", Str::finish("A", ""));
+		$this->assertSame("A", Str::finish("", "A"));
+		$this->assertSame("A\x00", Str::finish("A", "\x00"));
+		$this->assertSame("\x00A", Str::finish("\x00", "A"));
+		$this->assertSame("AB", Str::finish("A", "B"));
+		$this->assertSame("ABC", Str::finish("AB", "C"));
+		$this->assertSame("ABCD", Str::finish("AB", "CD"));
+		$this->assertSame("A\x80A\x80AB\xbfB\xbfB", Str::finish("A\x80A\x80A", "B\xbfB\xbfB"));
+		$this->assertSame("A\x80B\x80CA\x80C", Str::finish("A\x80B\x80C", "A\x80C"));
+		$this->assertSame("A\x80B\x80CA\x80B", Str::finish("A\x80B\x80C", "A\x80B"));
+		$this->assertSame("ABCAB", Str::finish("AB", "CAB"));
+		
+		$this->assertSame("A", Str::finish("A", "A"));
+		$this->assertSame("\x00", Str::finish("\x00", "\x00"));
+		$this->assertSame("AB", Str::finish("AB", "AB"));
+		$this->assertSame("ABC", Str::finish("ABC", "BC"));
+		$this->assertSame("A\x80B\x80C", Str::finish("A\x80B\x80C", "B\x80C"));
+	}
+	
+	public function testIncSuffix ()
+	{
+		$this->assertSame("1", Str::incSuffix(""));
+		$this->assertSame("1", Str::incSuffix("0"));
+		$this->assertSame("2", Str::incSuffix("1"));
+		$this->assertSame("10", Str::incSuffix("9"));
+		$this->assertSame("9999990000", Str::incSuffix("9999989999"));
+		$this->assertSame("10000000000", Str::incSuffix("9999999999"));
+		
+		$this->assertSame("ABC1", Str::incSuffix("ABC"));
+		$this->assertSame("ABC1", Str::incSuffix("ABC0"));
+		$this->assertSame("ABC2", Str::incSuffix("ABC1"));
+		$this->assertSame("ABC10", Str::incSuffix("ABC9"));
+		$this->assertSame("ABC9999990000", Str::incSuffix("ABC9999989999"));
+		$this->assertSame("ABC10000000000", Str::incSuffix("ABC9999999999"));
+		
+		$this->assertSame("-2", Str::incSuffix("-1"));
+		$this->assertSame("-3", Str::incSuffix("-2"));
+		$this->assertSame("ABC-2", Str::incSuffix("ABC-1"));
+		$this->assertSame("ABC-3", Str::incSuffix("ABC-2"));
+		
+		$this->assertSame("ABC1", Str::incSuffix("ABC0000"));
+		$this->assertSame("ABC2", Str::incSuffix("ABC0001"));
+		$this->assertSame("ABC4.6", Str::incSuffix("ABC4.5"));
+		$this->assertSame("ABC4.10", Str::incSuffix("ABC4.9"));
+		
+		$this->assertSame("ABC3", Str::incSuffix("ABC1", 2));
+		$this->assertSame("ABC10", Str::incSuffix("ABC1", 9));
+		$this->assertSame("ABC150", Str::incSuffix("ABC42", 108));
+		$this->assertSame("ABC42", Str::incSuffix("ABC42", 0));
+		$this->assertSame("ABC41", Str::incSuffix("ABC42", -1));
+		$this->assertSame("ABC39", Str::incSuffix("ABC42", -3));
+		$this->assertSame("ABC9999999999", Str::incSuffix("ABC10000000000", -1));
+	}
 }
