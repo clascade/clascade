@@ -416,6 +416,46 @@ if (!function_exists('u_ucwords'))
 	}
 }
 
+if (!function_exists('a_strtoupper'))
+{
+	function u_strtoupper ($string)
+	{
+		return Clascade\Util\Str::upperAscii($string);
+	}
+}
+
+if (!function_exists('a_strtolower'))
+{
+	function u_strtolower ($string)
+	{
+		return Clascade\Util\Str::lowerAscii($string);
+	}
+}
+
+if (!function_exists('a_strtotitle'))
+{
+	function u_strtotitle ($string, $exceptions=null)
+	{
+		return Clascade\Util\Str::titleAscii($string, $exceptions);
+	}
+}
+
+if (!function_exists('a_ucfirst'))
+{
+	function u_ucfirst ($string)
+	{
+		return Clascade\Util\Str::ucFirstAscii($string);
+	}
+}
+
+if (!function_exists('a_ucwords'))
+{
+	function u_ucwords ($string, $exceptions)
+	{
+		return Clascade\Util\Str::titleWordsAscii($string, $exceptions);
+	}
+}
+
 if (!function_exists('str_plural'))
 {
 	function str_plural ($singular, $num=null, $plural=null, $lang=null)
