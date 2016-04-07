@@ -391,7 +391,7 @@ class Str
 		return static::incSuffix($string, -$amount);
 	}
 	
-	//== Letter case =//
+	//== Letter case (UTF-8) =//
 	
 	/**
 	 * Uppercase a UTF-8 string.
@@ -399,7 +399,7 @@ class Str
 	
 	public static function upper ($string)
 	{
-		$string = strtoupper($string);
+		$string = self::upperAscii($string);
 		return Unicode::mapHighCharsByConf($string, 'unicode/to-upper');
 	}
 	
@@ -410,7 +410,7 @@ class Str
 	public static function lower ($string)
 	{
 		$found_upper_sigma = false;
-		$string = strtolower($string);
+		$string = self::lowerAscii($string);
 		$string = Unicode::mapHighCharsByConf($string, 'unicode/to-lower', null,
 		[
 			0x03a3 => function ($char) use (&$found_upper_sigma)
@@ -473,7 +473,7 @@ class Str
 	
 	public static function titleChars ($string)
 	{
-		$string = strtoupper($string);
+		$string = self::upperAscii($string);
 		return Unicode::mapHighCharsByConf($string, 'unicode/to-title');
 	}
 	
@@ -556,6 +556,108 @@ class Str
 			}
 			
 			return $match[1].$replacement;
+		}, $string);
+	}
+	
+	//== Letter case (ASCII) ==//
+	
+	/**
+	 * Uppercase an ASCII string.
+	 */
+	
+	public static function upperAscii ($string)
+	{
+		return strtr($string, 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+	}
+	
+	/**
+	 * Lowercase an ASCII string.
+	 */
+	
+	public static function lowerAscii ($string)
+	{
+		return strtr($string, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz');
+	}
+	
+	/**
+	 * Title case the first character in each word of an ASCII
+	 * string, except certain words.
+	 *
+	 * This function doesn't change any existing uppercase
+	 * characters to lowercase. If you need it to, you might want to
+	 * call Str::lower() on the string before calling this.
+	 */
+	
+	public static function titleAscii ($string, $exceptions=null)
+	{
+		if ($exceptions === null)
+		{
+			$exceptions = conf('title-case-exceptions.words');
+		}
+		
+		$string = static::titleWordsAscii($string, $exceptions);
+		$string = static::ucFirstAscii($string);
+		return $string;
+	}
+	
+	/**
+	 * Lowercase the first character of an ASCII string.
+	 */
+	
+	public static function lcFirstAscii ($string)
+	{
+		return static::lowerAscii(substr($string, 0, 1)).substr($string, 1);
+	}
+	
+	/**
+	 * Uppercase the first character of an ASCII string.
+	 */
+	
+	public static function ucFirstAscii ($string)
+	{
+		return static::upperAscii(substr($string, 0, 1)).substr($string, 1);
+	}
+	
+	/**
+	 * Title case the first character in each word of an ASCII
+	 * string.
+	 *
+	 * For the purposes of this function, a word begins with the
+	 * first letter or number to appear in the string or after a
+	 * prior ASCII whitespace character.
+	 *
+	 * This function doesn't change any existing uppercase
+	 * characters to lowercase. If you need it to, you might want to
+	 * call Str::lowerAscii() on the string before calling this.
+	 */
+	
+	public static function titleWordsAscii ($string, $exceptions=null)
+	{
+		if ($exceptions !== null)
+		{
+			if (!is_array($exceptions))
+			{
+				$exceptions = preg_split('/\s*,\s*/', $exceptions);
+			}
+			
+			if (empty ($exceptions))
+			{
+				$exceptions = '';
+			}
+			else
+			{
+				foreach ($exceptions as $key => $value)
+				{
+					$exceptions[$key] = preg_quote($value, '/');
+				}
+				
+				$exceptions = '(?!(?:'.implode('|', $exceptions).')(?:[^0-9A-Za-z]|$))';
+			}
+		}
+		
+		return preg_replace_callback('/((?:^|[\x09-\x0d ])[^0-9A-Za-z]*)'.$exceptions.'([0-9A-Za-z])/u', function ($match)
+		{
+			return $match[1].self::upperAscii($match[2]);
 		}, $string);
 	}
 	
@@ -994,7 +1096,7 @@ class Str
 		}
 		
 		$string = static::ascii($string);
-		$string = strtolower($string);
+		$string = self::lowerAscii($string);
 		$string = preg_replace('/[^a-z0-9_\-\s]+/', '', $string);
 		$string = preg_replace('/[^a-z0-9]+/', $working_separator, $string);
 		$string = ltrim($string, '-');
