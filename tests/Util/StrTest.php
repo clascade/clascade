@@ -716,6 +716,12 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame("\xce\xa3\xce\xa3", Str::upper("\xce\xa3\xce\xa3"));
 		$this->assertSame("\xce\xa3\xce\xa3", Str::upper("\xcf\x83\xcf\x83"));
 		$this->assertSame("\xce\xa3\xce\xa3", Str::upper("\xcf\x82\xcf\x82"));
+		
+		// Invalid sequences (should be replaced).
+		
+		$this->assertSame("A\xef\xbf\xbdABA\xef\xbf\xbdA", Str::upper("A\x80AbA\x80A"));
+		$this->assertSame("A\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbdABA", Str::upper("A\xf4\x90\x80\x80AbA"));
+		$this->assertSame("A\xef\xbf\xbdABA", Str::upper("A\xf0\x90\x80AbA"));
 	}
 	
 	public function testLower ()
@@ -753,5 +759,11 @@ class StrTest extends \PHPUnit_Framework_TestCase
 		$this->assertSame("\xcf\x83\xcf\x83", Str::lower("\xcf\x83\xcf\x83"));
 		$this->assertSame("\xcf\x82\xcf\x82", Str::lower("\xcf\x82\xcf\x82"));
 		$this->assertSame("abc\xcf\x82 abc\xcf\x82 (\xcf\x83\xcf\x82) \xcf\x83 a", Str::lower("ABC\xce\xa3 abc\xce\xa3 (\xce\xa3\xce\xa3) \xce\xa3 A"));
+		
+		// Invalid sequences (should be replaced).
+		
+		$this->assertSame("a\xef\xbf\xbdaba\xef\xbf\xbda", Str::lower("a\x80aBa\x80a"));
+		$this->assertSame("a\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbd\xef\xbf\xbdaba", Str::lower("a\xf4\x90\x80\x80aBa"));
+		$this->assertSame("a\xef\xbf\xbdaba", Str::lower("a\xf0\x90\x80aBa"));
 	}
 }
