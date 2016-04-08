@@ -1,6 +1,7 @@
 <?php
 
 namespace Clascade\Mail;
+use Clascade\Util\Str;
 
 class MIME
 {
@@ -11,7 +12,7 @@ class MIME
 		$string = preg_replace_callback('/[^ \t\x21-\x3c\x3e-\x7e]/', function ($match)
 		{
 			$hex = hex(ord($match[0]), 2);
-			$hex = strtoupper($hex);
+			$hex = Str::upperAscii($hex);
 			return '='.$hex;
 		}, $string);
 		

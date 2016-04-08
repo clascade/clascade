@@ -2,6 +2,7 @@
 
 namespace Clascade\DB;
 use Clascade\Core;
+use Clascade\Util\Str;
 
 class QueryBuilder
 {
@@ -539,7 +540,7 @@ class QueryBuilder
 					$value = (array) $value;
 					$value[0] = $this->db->ident($value[0]);
 					
-					if (isset ($value[1]) && (!$value[1] || strtolower($value[1]) == 'desc'))
+					if (isset ($value[1]) && (!$value[1] || Str::lowerAscii($value[1]) == 'desc'))
 					{
 						$value = "{$value[0]} DESC";
 					}
@@ -687,7 +688,7 @@ class QueryBuilder
 		
 		foreach ($this->parts['join'] as $join)
 		{
-			$this->sql .= ' '.strtoupper($join['type']).' JOIN ? ON (?)';
+			$this->sql .= ' '.Str::upperAscii($join['type']).' JOIN ? ON (?)';
 			$this->params[] = $join['table'];
 			$this->params[] = $join['condition'];
 		}

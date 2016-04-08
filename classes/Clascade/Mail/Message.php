@@ -204,7 +204,7 @@ class Message implements \ArrayAccess
 	
 	public function format ($header)
 	{
-		$header = strtolower($header);
+		$header = Str::lowerAscii($header);
 		
 		if (array_key_exists($header, $this->parts))
 		{
@@ -471,19 +471,19 @@ class Message implements \ArrayAccess
 	
 	public function offsetExists ($offset)
 	{
-		$offset = strtolower($offset);
+		$offset = Str::lowerAscii($offset);
 		return isset ($this->parts[$offset]);
 	}
 	
 	public function offsetGet ($offset)
 	{
-		$offset = strtolower($offset);
+		$offset = Str::lowerAscii($offset);
 		return $this->parts[$offset];
 	}
 	
 	public function offsetSet ($offset, $value)
 	{
-		$offset = strtolower($offset);
+		$offset = Str::lowerAscii($offset);
 		
 		if (array_key_exists($offset, $this->parts))
 		{
@@ -543,7 +543,7 @@ class Message implements \ArrayAccess
 	
 	public static function normalizeHeader ($header)
 	{
-		$header = strtolower($header);
+		$header = Str::lowerAscii($header);
 		$header = trim($header, " \t");
 		$irregular_normalizations = conf('iana/message-headers/irregular-normalizations');
 		
@@ -554,7 +554,7 @@ class Message implements \ArrayAccess
 		
 		return preg_replace_callback('/(?:^|-)[a-z]/', function ($match)
 		{
-			return strtoupper($match[0]);
+			return Str::upperAscii($match[0]);
 		}, $header);
 	}
 	

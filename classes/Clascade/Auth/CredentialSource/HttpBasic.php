@@ -3,6 +3,7 @@
 namespace Clascade\Auth\CredentialSource;
 use Clascade\Auth;
 use Clascade\Router;
+use Clascade\Util\Str;
 
 class HttpBasic extends \Clascade\Auth\CredentialSource
 {
@@ -63,7 +64,7 @@ class HttpBasic extends \Clascade\Auth\CredentialSource
 			return false;
 		}
 		
-		$user = Auth::attemptPassword('email:'.strtolower($_SERVER['PHP_AUTH_USER']), $_SERVER['PHP_AUTH_PW']);
+		$user = Auth::attemptPassword('email:'.Str::lowerAscii($_SERVER['PHP_AUTH_USER']), $_SERVER['PHP_AUTH_PW']);
 		
 		if ($user !== false)
 		{

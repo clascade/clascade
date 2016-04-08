@@ -2,6 +2,7 @@
 
 namespace Clascade\Auth;
 use Clascade\Auth;
+use Clascade\Util\Str;
 
 class User implements \ArrayAccess
 {
@@ -125,7 +126,7 @@ class User implements \ArrayAccess
 	{
 		$auth_ident = preg_replace('/[\x00-\x1f\x7f]/', '', $auth_ident);
 		$auth_ident = trim($auth_ident, ' ');
-		$auth_ident = u_strtolower($auth_ident);
+		$auth_ident = Str::lower($auth_ident);
 		return $auth_ident;
 	}
 }

@@ -24,7 +24,7 @@ class SimpleElement
 		
 		if ($content_format === null)
 		{
-			$tag_name_lower = strtolower($this->tag_name);
+			$tag_name_lower = Str::lowerAscii($this->tag_name);
 			
 			if (isset (static::$void_elements_lookup[$tag_name_lower]))
 			{

@@ -2,6 +2,7 @@
 
 namespace Clascade\Session;
 use Clascade\Util\Crypto;
+use Clascade\Util\Str;
 use Clascade\Exception;
 
 class SessionProvider
@@ -242,7 +243,7 @@ class SessionProvider
 		{
 			$this->set('clascade.session.info-hash', $info_hash);
 		}
-		elseif (!str_equals($this->get('clascade.session.info-hash'), $info_hash))
+		elseif (!Str::equals($this->get('clascade.session.info-hash'), $info_hash))
 		{
 			// The session has a different infohash, indicating
 			// that the client seems to be different from when the
@@ -287,7 +288,7 @@ class SessionProvider
 			return true;
 		}
 		
-		switch (strtoupper($request_method))
+		switch (Str::upperAscii($request_method))
 		{
 		case 'GET':
 		case 'HEAD':
@@ -306,7 +307,7 @@ class SessionProvider
 			
 			$submitted_token = Crypto::unmask(nice64_decode($_POST[$token_name]));
 			
-			if (!str_equals($this->get('clascade.session.csrf-token'), $submitted_token))
+			if (!Str::equals($this->get('clascade.session.csrf-token'), $submitted_token))
 			{
 				return false;
 			}

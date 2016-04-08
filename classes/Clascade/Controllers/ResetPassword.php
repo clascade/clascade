@@ -52,7 +52,7 @@ class ResetPassword
 	{
 		$v = $page->validate('reset-password-request');
 		$start_time = microtime(true);
-		$auth_ident = 'email:'.strtolower($v['email']);
+		$auth_ident = 'email:'.Str::lowerAscii($v['email']);
 		
 		$store = Auth::getStore();
 		$store->begin();

@@ -1,6 +1,7 @@
 <?php
 
 namespace Clascade;
+use Clascade\Util\Str;
 
 $this->label(
 [
@@ -18,7 +19,7 @@ $this->requireMaxLength('email', 249); // 255 - Str::length('email:')
 
 $this->enforce();
 
-$auth_ident = 'email:'.strtolower($this['email']);
+$auth_ident = 'email:'.Str::lowerAscii($this['email']);
 
 // Check for duplicate email.
 

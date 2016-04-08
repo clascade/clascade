@@ -2,6 +2,7 @@
 
 namespace Clascade\Auth\CredentialSource;
 use Clascade\Auth;
+use Clascade\Util\Str;
 
 class Shibboleth extends \Clascade\Auth\CredentialSource
 {
@@ -16,7 +17,7 @@ class Shibboleth extends \Clascade\Auth\CredentialSource
 		
 		// Check whether the user has an account yet.
 		
-		$auth_ident = 'eppn:'.strtolower($vars['eppn']);
+		$auth_ident = 'eppn:'.Str::lowerAscii($vars['eppn']);
 		$store = Auth::getStore();
 		$user = $store->getUserByAuthIdent($auth_ident);
 		$new_meta = $this->getMetaFromRequest($vars);

@@ -174,14 +174,14 @@ class Lang
 					{
 						// Pluralization category.
 						
-						$category = strtolower($match[1]);
+						$category = Str::lowerAscii($match[1]);
 						
 						if ($num === $category)
 						{
 							return $form;
 						}
 						
-						$auto_choices[strtolower($match[1])] = $form;
+						$auto_choices[Str::lowerAscii($match[1])] = $form;
 					}
 					else
 					{
@@ -202,8 +202,8 @@ class Lang
 				{
 					// Number range.
 					
-					$lower = strtolower($match[2]);
-					$upper = strtolower($match[3]);
+					$lower = Str::lowerAscii($match[2]);
+					$upper = Str::lowerAscii($match[3]);
 					
 					if ($lower != 'inf' && $lower != '+inf' && $upper != '-inf')
 					{
@@ -331,7 +331,7 @@ class Lang
 			$lang = explode(';', $lang, 3);
 			$q = 1;
 			
-			if (isset ($lang[1]) && strtolower(substr($lang[1], 0, 2)) == 'q=')
+			if (isset ($lang[1]) && Str::lowerAscii(substr($lang[1], 0, 2)) == 'q=')
 			{
 				$q = (float) substr($lang[1], 2);
 			}
@@ -342,7 +342,7 @@ class Lang
 			}
 			else
 			{
-				$lang = strtolower($lang[0]).'-';
+				$lang = Str::lowerAscii($lang[0]).'-';
 				
 				if (!isset ($lang_scores[$lang]) || $lang_scores[$lang] < $q)
 				{
@@ -362,7 +362,7 @@ class Lang
 		foreach ($choices as $choice)
 		{
 			$choice_match = static::toBCP47($choice);
-			$choice_match = strtolower($choice_match);
+			$choice_match = Str::lowerAscii($choice_match);
 			$choice_match .= '-';
 			$lang_match = null;
 			
@@ -399,7 +399,7 @@ class Lang
 	{
 		$lang = str_replace('_', '-', $lang);
 		
-		if (strtolower(substr("{$lang}_", 0, 5)) == 'root_')
+		if (Str::lowerAscii(substr("{$lang}_", 0, 5)) == 'root_')
 		{
 			$lang = 'und'.substr($lang, 4);
 		}
@@ -409,19 +409,19 @@ class Lang
 	
 	public static function getDictFilename ($word)
 	{
-		$filename = u_substr($word, 0, 2);
+		$filename = Str::slice($word, 0, 2);
 		
 		if (preg_match('/^[A-Za-z]{2}$/', $filename))
 		{
-			return strtolower($filename);
+			return Str::lowerAscii($filename);
 		}
-		elseif (u_strlen($filename) < 2 || Str::isAscii($filename))
+		elseif (Str::length($filename) < 2 || Str::isAscii($filename))
 		{
 			return '_';
 		}
 		else
 		{
-			$filename = u_strtolower($filename);
+			$filename = Str::lower($filename);
 			
 			return preg_replace_callback('/[^0-9A-Za-z]/u', function ($match)
 			{
@@ -447,7 +447,7 @@ class Lang
 		{
 			// Try a lowercase match.
 			
-			$choices = static::translationChoices("dict/plurals/{$filename}.".u_strtolower($word), $lang);
+			$choices = static::translationChoices("dict/plurals/{$filename}.".Str::lower($word), $lang);
 		}
 		
 		if ($choices !== null)
@@ -469,9 +469,9 @@ class Lang
 		
 		// English.
 		
-		if (starts_with(strtolower($lang).'_', 'en_'))
+		if (starts_with(Str::lowerAscii($lang).'_', 'en_'))
 		{
-			$lower = strtolower($word);
+			$lower = Str::lowerAscii($word);
 			$last = substr($lower, -1);
 			$last2 = substr($lower, -2);
 			
@@ -878,7 +878,7 @@ class Lang
 	
 	public static function getPluralizationModel ($lang)
 	{
-		$lang = strtolower($lang);
+		$lang = Str::lowerAscii($lang);
 		
 		while ($lang != '')
 		{

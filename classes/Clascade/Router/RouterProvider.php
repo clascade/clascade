@@ -6,6 +6,7 @@ use Clascade\Exception;
 use Clascade\Hook;
 use Clascade\Session;
 use Clascade\Util\Escape;
+use Clascade\Util\Str;
 
 class RouterProvider
 {
@@ -52,7 +53,7 @@ class RouterProvider
 	
 	public function add ($http_method, $path, $controller, $middleware=null)
 	{
-		$http_method = strtolower($http_method);
+		$http_method = Str::lowerAscii($http_method);
 		$path = str_begin($path, '/');
 		$base = path('/'.$this->method_dirs[$http_method]);
 		$this->routes[$base.$path] = Core::getCallable($controller, $http_method);
@@ -71,7 +72,7 @@ class RouterProvider
 	
 	public function middlewareByArray ($http_method, $path, $handlers)
 	{
-		$http_method = strtolower($http_method);
+		$http_method = Str::lowerAscii($http_method);
 		$base = path('/'.$this->method_dirs[$http_method]);
 		Hook::addByArray("route:{$base}{$path}", $handlers);
 	}
@@ -91,7 +92,7 @@ class RouterProvider
 		
 		// Map the method to a directory.
 		
-		$http_method = strtolower($http_method);
+		$http_method = Str::lowerAscii($http_method);
 		
 		if (!isset ($this->method_dirs[$http_method]))
 		{

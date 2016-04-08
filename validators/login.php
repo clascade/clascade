@@ -1,6 +1,7 @@
 <?php
 
 namespace Clascade;
+use Clascade\Util\Str;
 
 $this->label(
 [
@@ -29,7 +30,7 @@ $this->enforce();
 
 // Attempt to authenticate with the email/password.
 
-$auth_ident = 'email:'.strtolower($this['email']);
+$auth_ident = 'email:'.Str::lowerAscii($this['email']);
 
 if (Auth::isThrottled($auth_ident))
 {
