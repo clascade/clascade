@@ -158,6 +158,15 @@ class Page extends RouteTarget
 		]);
 	}
 	
+	public function addInlineStyle ($css, $media=null)
+	{
+		$this->head_elements[] = new SimpleElement('style',
+		[
+			'type' => 'text/css',
+			'media' => ($media === null ? 'all' : $media),
+		], $css);
+	}
+	
 	public function addScript ($src)
 	{
 		$this->head_elements[] = new SimpleElement('script',
