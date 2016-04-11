@@ -160,7 +160,7 @@ class CoreProvider
 			$closure = function ()
 			{
 				extract(\Clascade\Core::provider()->load_params);
-				require (\Clascade\Core::provider()->load_handler);
+				return require (\Clascade\Core::provider()->load_handler);
 			};
 			
 			$closure = $closure->bindTo($context);

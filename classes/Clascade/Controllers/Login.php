@@ -7,7 +7,7 @@ class Login
 {
 	public function get ($page)
 	{
-		$page->render('pages/login',
+		return view('pages/login',
 		[
 			'redirect-to' => request_redirect_to(conf('general.login-dest')),
 			'email' => $page->fieldValue('email'),

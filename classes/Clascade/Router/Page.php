@@ -9,6 +9,7 @@ use Clascade\StatusReport;
 use Clascade\Util\SimpleElement;
 use Clascade\Validator;
 use Clascade\View\FieldVar;
+use Clascade\View\ViewVar;
 
 class Page extends RouteTarget
 {
@@ -64,7 +65,19 @@ class Page extends RouteTarget
 		
 		try
 		{
-			return Core::load($this->controller, $this);
+			$result = Core::load($this->controller, $this);
+			
+			if (is_string($result) || is_object($result))
+			{
+				echo $result;
+			}
+			elseif (is_array($result))
+			{
+				foreach ($result as $view)
+				{
+					echo $view;
+				}
+			}
 		}
 		catch (Exception\ValidationException $e)
 		{
@@ -127,22 +140,12 @@ class Page extends RouteTarget
 	
 	public function render ($view, $vars=null)
 	{
-		$context = make('Clascade\View\Context', $this, $view, $vars);
-		++$this->view_nonce;
-		
-		if (is_string($view) && isset ($this->view_handlers[$view]))
-		{
-			$context->handler = $this->view_handlers[$view];
-		}
-		
-		$context->renderSelf();
+		make('Clascade\View\Context', $view, $vars)->render();
 	}
 	
 	public function getRender ($view, $vars=null)
 	{
-		ob_start();
-		$this->render($view, $vars);
-		return ob_get_clean();
+		make('Clascade\View\Context', $view, $vars)->getRender();
 	}
 	
 	//== Head elements ==//
@@ -182,6 +185,23 @@ class Page extends RouteTarget
 		[
 			'type' => 'text/javascript',
 		], $code);
+	}
+	
+	public function headElements ($indent=null)
+	{
+		if ($indent === null)
+		{
+			$indent = "\t\t";
+		}
+		
+		return implode("\n{$indent}", $this->head_elements)."\n";
+	}
+	
+	public function langAttr ()
+	{
+		$lang_attr = Lang::toBCP47($this->lang);
+		$lang_attr = ViewVar::wrap($lang_attr);
+		return $lang_attr;
 	}
 	
 	//== Error pages ==//

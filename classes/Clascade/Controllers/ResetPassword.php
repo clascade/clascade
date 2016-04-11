@@ -13,11 +13,11 @@ class ResetPassword
 	{
 		if (isset ($_GET['k']))
 		{
-			$this->getReset($page);
+			return $this->getReset($page);
 		}
 		else
 		{
-			$this->getRequest($page);
+			return $this->getRequest($page);
 		}
 	}
 	
@@ -37,14 +37,14 @@ class ResetPassword
 	{
 		if (isset ($_GET['sent']))
 		{
-			$page->render('pages/reset-password-sent',
+			return view('pages/reset-password-sent',
 			[
 				'login-url' => conf('common.urls.login'),
 			]);
 		}
 		else
 		{
-			$page->render('pages/reset-password-form');
+			return view('pages/reset-password-form');
 		}
 	}
 	
@@ -113,7 +113,7 @@ class ResetPassword
 			$page->redirectWithStatus(StatusReport::error('That confirmation link is already expired. Try requesting a new reset.'), conf('common.urls.reset-password'));
 		}
 		
-		$page->render('pages/reset-password',
+		return view('pages/reset-password',
 		[
 			'reset-key' => $_GET['k'],
 		]);

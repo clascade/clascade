@@ -502,14 +502,14 @@ if (!function_exists('post_fields'))
 {
 	function post_fields ()
 	{
-		$fields = Clascade\Router::provider()->target->getRender('post-fields',
+		$fields = make('Clascade\View\Context', 'post-fields',
 		[
 			'csrf-token-name' => csrf_token_name(),
 			'csrf-token' => csrf_token(),
 			'return-to-name' => conf('common.field-names.return-to'),
 			'return-to' => request_url(),
 		]);
-		return new Clascade\View\HTMLVar($fields);
+		return new Clascade\View\HTMLVar($fields->getRender());
 	}
 }
 
@@ -518,6 +518,14 @@ if (!function_exists('o'))
 	function o ($message_key, $params=null, $lang=null)
 	{
 		return Clascade\View\ViewVar::wrap(Clascade\Lang::translate($message_key, $params, $lang));
+	}
+}
+
+if (!function_exists('view'))
+{
+	function view ($view, $vars=null)
+	{
+		return new Clascade\View\Context($view, $vars);
 	}
 }
 

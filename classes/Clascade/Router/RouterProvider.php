@@ -26,7 +26,7 @@ class RouterProvider
 	public function route ($request_uri, $http_method)
 	{
 		$this->target = $this->findTarget($request_uri, $http_method);
-		$this->target->load();
+		$result = $this->target->load();
 	}
 	
 	//== Route management ==//
