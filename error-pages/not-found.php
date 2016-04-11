@@ -2,5 +2,4 @@
 
 namespace Clascade;
 
-header("{$_SERVER['SERVER_PROTOCOL']} 404 Not Found");
-$this->render('pages/error/not-found');
+return view('pages/error/not-found');

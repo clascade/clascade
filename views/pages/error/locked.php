@@ -1,7 +1,12 @@
-<?=$this->view('page-header', ['title' => 'Session Locked']) ?>
+<?php
+
+header("{$_SERVER['SERVER_PROTOCOL']} 403 Forbidden");
+
+?>
+<?=view('page-header', ['title' => 'Session Locked']) ?>
 
 <section class="group">
 	<p><?=o('common.error.locked.body') ?></p>
 </section>
 
-<?=$this->view('page-footer') ?>
+<?=view('page-footer') ?>

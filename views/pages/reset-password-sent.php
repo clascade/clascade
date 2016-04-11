@@ -1,4 +1,4 @@
-<?=$this->view('page-header', ['title' => 'Reset password']) ?>
+<?=view('page-header', ['title' => 'Reset password']) ?>
 
 <div class="reset-sent">
 	<div>
@@ -12,4 +12,4 @@
 	</div>
 </div>
 
-<?=$this->view('page-footer') ?>
+<?=view('page-footer') ?>

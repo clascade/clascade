@@ -1,5 +1,5 @@
-<?=$this->view('page-header', ['title' => 'Reset password']) ?>
-<?=$this->view('form-header') ?>
+<?=view('page-header', ['title' => 'Reset password']) ?>
+<?=view('form-header') ?>
 
 <section class="group">
 	<h1>Please type your email address to request a password reset.</h1>
@@ -12,5 +12,5 @@
 	</div>
 </section>
 
-<?=$this->view('form-footer', ['subject-text' => 'Send confirmation email']) ?>
-<?=$this->view('page-footer') ?>
+<?=view('form-footer', ['subject-text' => 'Send confirmation email']) ?>
+<?=view('page-footer') ?>

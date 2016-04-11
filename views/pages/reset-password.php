@@ -1,5 +1,5 @@
-<?=$this->view('page-header', ['title' => 'Reset password']) ?>
-<?=$this->view('form-header') ?>
+<?=view('page-header', ['title' => 'Reset password']) ?>
+<?=view('form-header') ?>
 
 <section class="group">
 	<h1>Please choose a new password.</h1>
@@ -17,5 +17,5 @@
 	</div>
 </section>
 
-<?=$this->view('form-footer', ['subject-text' => 'Set password']) ?>
-<?=$this->view('page-footer') ?>
+<?=view('form-footer', ['subject-text' => 'Set password']) ?>
+<?=view('page-footer') ?>

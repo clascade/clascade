@@ -1,7 +1,12 @@
-<?=$this->view('page-header', ['title' => '403: Forbidden']) ?>
+<?php
+
+header("{$_SERVER['SERVER_PROTOCOL']} 403 Forbidden");
+
+?>
+<?=view('page-header', ['title' => '403: Forbidden']) ?>
 
 <section class="group">
 	<p><?=o('common.error.forbidden.body') ?></p>
 </section>
 
-<?=$this->view('page-footer') ?>
+<?=view('page-footer') ?>

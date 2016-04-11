@@ -208,7 +208,8 @@ class Page extends RouteTarget
 	
 	public function errorPage ($error_page)
 	{
-		require (path("/error-pages/{$error_page}.php"));
+		$this->controller = path("/error-pages/{$error_page}.php");
+		$this->load();
 		throw new Exception\PageLoadedException("Loaded error page \"{$error_page}\".");
 	}
 	

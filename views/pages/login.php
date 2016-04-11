@@ -1,5 +1,5 @@
-<?=$this->view('page-header', ['title' => 'Log in']) ?>
-<?=$this->view('form-header') ?>
+<?=view('page-header', ['title' => 'Log in']) ?>
+<?=view('form-header') ?>
 
 <section class="group">
 	<h1>Please enter your login details</h1>
@@ -27,5 +27,5 @@
 
 <input type="hidden" name="redirect-to" value="<?=$redirect_to ?>">
 
-<?=$this->view('form-footer') ?>
-<?=$this->view('page-footer') ?>
+<?=view('form-footer') ?>
+<?=view('page-footer') ?>
