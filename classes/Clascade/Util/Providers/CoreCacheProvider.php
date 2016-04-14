@@ -13,13 +13,14 @@ class CoreCacheProvider
 			'controller-wildcards' => [],
 			'conf-files' => [],
 			'lang-files' => [],
+			'autoload' => [[]],
 		];
 		
 		$core = Core::provider();
 		
-		for ($i = count($core->layers) - 1; $i >= 0; --$i)
+		for ($i = count($core->layer_paths) - 1; $i >= 0; --$i)
 		{
-			$this->collectCachablePaths($core->layers[$i], '', $cache, $i);
+			$this->collectCachablePaths($core->layer_paths[$i], '', $cache, $i);
 		}
 		
 		return $cache;
@@ -29,6 +30,8 @@ class CoreCacheProvider
 	{
 		$dirs = [];
 		$conf_files = [];
+		$classes = [];
+		$autoload_level = count($cache['autoload']) - 1;
 		$d = opendir("{$base}{$rel_path}");
 		
 		if ($d !== false)
@@ -61,6 +64,15 @@ class CoreCacheProvider
 					{
 						switch ($section)
 						{
+						case 'classes':
+							if (ends_with($filename, '.php'))
+							{
+								$class_name = substr("{$rel_path}/{$filename}", 9, -4);
+								$class_name = str_replace('/', '\\', $class_name);
+								$classes[$class_name] = "{$base}{$rel_path}/{$filename}";
+							}
+							break;
+						
 						case 'conf':
 						case 'lang':
 							$pos = strrpos($filename, '.');
@@ -101,6 +113,20 @@ class CoreCacheProvider
 			
 			switch ($section)
 			{
+			case 'classes':
+				if (!empty ($classes))
+				{
+					if (!isset ($cache['autoload'][$autoload_level]['classmap']))
+					{
+						$cache['autoload'][$autoload_level]['classmap'] = $classes;
+					}
+					else
+					{
+						$cache['autoload'][$autoload_level]['classmap'] += $classes;
+					}
+				}
+				break;
+			
 			case 'conf':
 			case 'lang':
 				foreach ($conf_files as $conf_name => $conf_file)
@@ -123,6 +149,54 @@ class CoreCacheProvider
 			foreach ($dirs as $dir)
 			{
 				$this->collectCachablePaths($base, "{$rel_path}/{$dir}", $cache, $layer_num, ($section === null ? $dir : $section));
+			}
+			
+			if ($section === null)
+			{
+				// Base directory of the layer.
+				
+				if (!isset ($cache['autoloader-path']) && file_exists("{$base}/classes/Composer/Autoload/ClassLoader.php"))
+				{
+					$cache['autoloader-path'] = "{$base}/classes/Composer/Autoload/ClassLoader.php";
+				}
+				
+				if (file_exists("{$base}{$rel_path}/vendor/autoload.php"))
+				{
+					if (!isset ($cache['autoloader-path']))
+					{
+						$cache['autoloader-path'] = "{$base}/vendor/composer/ClassLoader.php";
+					}
+					
+					$maps =
+					[
+						'classmap' => require ("{$base}/vendor/composer/autoload_classmap.php"),
+						'psr4' => require ("{$base}/vendor/composer/autoload_psr4.php"),
+						'namespaces' => require ("{$base}/vendor/composer/autoload_namespaces.php"),
+						'files' => require ("{$base}/vendor/composer/autoload_files.php"),
+					];
+					
+					foreach ($maps as $key => $map)
+					{
+						if (!empty ($map))
+						{
+							if (!isset ($cache['autoload'][$autoload_level][$key]))
+							{
+								$cache['autoload'][$autoload_level][$key] = $map;
+							}
+							else
+							{
+								$cache['autoload'][$autoload_level][$key] += $map;
+							}
+						}
+					}
+					
+					$maps = $cache['autoload'][$autoload_level];
+					
+					if (!empty ($maps) && (count($maps) > 1 || !isset ($maps['classmap'])))
+					{
+						$cache['autoload'][] = [];
+					}
+				}
 			}
 		}
 	}

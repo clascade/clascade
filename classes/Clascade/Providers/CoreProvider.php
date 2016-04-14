@@ -67,7 +67,93 @@ class CoreProvider
 	
 	public function initAutoload ()
 	{
-		spl_autoload_register([$this, 'autoload']);
+		if (isset ($this->cache['autoload']))
+		{
+			$this->initAutoloadFromCache($this->cache['autoload'], $this->cache['autoloader-path']);
+		}
+		else
+		{
+			$this->initAutoloadFromLayers($this->layer_paths);
+		}
+	}
+	
+	public function initAutoloadFromCache (&$cache, $autoloader_path)
+	{
+		foreach ($cache as $maps)
+		{
+			if (count($maps) == 1 && isset ($maps['classmap']))
+			{
+				$maps = $maps['classmap'];
+				
+				spl_autoload_register(function ($class_name) use ($maps)
+				{
+					if (isset ($maps[$class_name]))
+					{
+						require ($maps[$class_name]);
+					}
+				});
+			}
+			else
+			{
+				if (!class_exists('Composer\Autoload\ClassLoader'))
+				{
+					require ($autoloader_path);
+				}
+				
+				$loader = new \Composer\Autoload\ClassLoader();
+				
+				foreach ($maps['namespaces'] as $namespace => $path)
+				{
+					$loader->set($namespace, $path);
+				}
+				
+				foreach ($maps['psr4'] as $namespace => $path)
+				{
+					$loader->setPsr4($namespace, $path);
+				}
+				
+				if (!empty ($maps['classmap']))
+				{
+					$loader->addClassMap($maps['classmap']);
+				}
+				
+				$loader->register(true);
+				
+				foreach ($maps['files'] as $file_identifier => $file)
+				{
+					if (empty ($GLOBALS['__composer_autoload_files'][$file_identifier]))
+					{
+						$this->load($file);
+						$GLOBALS['__composer_autoload_files'][$file_identifier] = true;
+					}
+				}
+			}
+		}
+	}
+	
+	public function initAutoloadFromLayers ($layer_paths)
+	{
+		for ($i = count($layer_paths) - 1; $i >= 0; --$i)
+		{
+			$path = $layer_paths[$i];
+			
+			spl_autoload_register(function ($class_name) use ($path)
+			{
+				$path .= $this->getPathByClassName($class_name);
+				
+				if (file_exists($path))
+				{
+					require ($path);
+				}
+			});
+			
+			$path = "{$path}/vendor/autoload.php";
+			
+			if (file_exists($path))
+			{
+				require ($path);
+			}
+		}
 	}
 	
 	public function checkEnvironment ($force=null)
@@ -97,31 +183,11 @@ class CoreProvider
 	}
 	
 	/**
-	 * PSR-0 class autoloader.
-	 */
-	
-	public function autoload ($class_name)
-	{
-		$path = $this->getPathByClassName($class_name);
-		$path = $this->getEffectivePath($path);
-		
-		if (file_exists($path))
-		{
-			require ($path);
-		}
-	}
-	
-	/**
 	 * Load a script with a clean variable scope.
 	 */
 	
 	public function load ($handler, $context=null, $object_method=null, $params=null)
 	{
-		if ($context === null)
-		{
-			$context = $this;
-		}
-		
 		$params = (array) $params;
 		
 		if (is_array($handler) || $handler instanceof \Closure)
