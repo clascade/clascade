@@ -113,22 +113,13 @@ class Core
 	
 	public static function getPathByClassNameGeneric ($class_name)
 	{
-		$class_name = ltrim($class_name, '\\');
-		
-		if ($pos = strrpos($class_name, '\\'))
+		if ($class_name[0] == '\\')
 		{
-			$namespace = substr($class_name, 0, $pos);
-			$class_name = substr($class_name, $pos + 1);
-			$path  = str_replace('\\', '/', $namespace).'/';
-		}
-		else
-		{
-			$namespace = '';
-			$path = '';
+			$class_name = substr($class_name, 1);
 		}
 		
-		$path .= str_replace('_', '/', $class_name);
-		return "/classes/{$path}.php";
+		$class_name = str_replace('\\', '/', $class_name);
+		return "/classes/{$class_name}.php";
 	}
 	
 	//== Provider shortcuts ==//

@@ -87,6 +87,11 @@ class CoreProvider
 				
 				spl_autoload_register(function ($class_name) use ($maps)
 				{
+					if ($class_name[0] == '\\')
+					{
+						$class_name = substr($class_name, 1);
+					}
+					
 					if (isset ($maps[$class_name]))
 					{
 						require ($maps[$class_name]);
@@ -117,7 +122,7 @@ class CoreProvider
 					$loader->addClassMap($maps['classmap']);
 				}
 				
-				$loader->register(true);
+				$loader->register();
 				
 				foreach ($maps['files'] as $file_identifier => $file)
 				{
