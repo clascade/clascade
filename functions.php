@@ -60,7 +60,7 @@ if (!function_exists('array_last'))
 
 if (!function_exists('array_last_key'))
 {
-	function array_last_key ()
+	function array_last_key ($array)
 	{
 		return Clascade\Util\Arr::lastKey($array);
 	}
