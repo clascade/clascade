@@ -69,17 +69,17 @@ class CoreProvider
 	{
 		if (isset ($this->cache['autoload']))
 		{
-			$this->initAutoloadFromCache($this->cache['autoload'], $this->cache['autoloader-path']);
+			$this->initAutoloadFromCache();
 		}
 		else
 		{
-			$this->initAutoloadFromLayers($this->layer_paths);
+			$this->initAutoloadFromLayers();
 		}
 	}
 	
-	public function initAutoloadFromCache (&$cache, $autoloader_path)
+	public function initAutoloadFromCache ()
 	{
-		foreach ($cache as $maps)
+		foreach ($this->cache['autoload'] as $maps)
 		{
 			if (count($maps) == 1 && isset ($maps['classmap']))
 			{
@@ -102,7 +102,7 @@ class CoreProvider
 			{
 				if (!class_exists('Composer\Autoload\ClassLoader'))
 				{
-					require ($autoloader_path);
+					require ($this->cache['autoloader-path']);
 				}
 				
 				$loader = new \Composer\Autoload\ClassLoader();
@@ -134,13 +134,29 @@ class CoreProvider
 				}
 			}
 		}
+		
+		spl_autoload_register(function ($class_name)
+		{
+			if ($class_name[0] == '\\')
+			{
+				$class_name = substr($class_name, 1);
+			}
+			
+			$rel_path = '/classes/'.str_replace('\\', '/', $class_name).'.php';
+			$path = $this->getEffectivePath($rel_path);
+			
+			if (file_exists($path))
+			{
+				require ($path);
+			}
+		});
 	}
 	
-	public function initAutoloadFromLayers ($layer_paths)
+	public function initAutoloadFromLayers ()
 	{
-		for ($i = count($layer_paths) - 1; $i >= 0; --$i)
+		for ($i = count($this->layer_paths) - 1; $i >= 0; --$i)
 		{
-			$path = $layer_paths[$i];
+			$path = $this->layer_paths[$i];
 			
 			spl_autoload_register(function ($class_name) use ($path)
 			{

@@ -16,18 +16,21 @@ class CoreCacheProvider
 			'conf-files' => [],
 			'lang-files' => [],
 			'autoload' => [[]],
+			'autoloader-path' => null,
 		];
 		
 		$core = Core::provider();
 		
 		for ($i = count($core->layer_paths) - 1; $i >= 0; --$i)
 		{
-			$this->crawl($core->layer_paths[$i], '', $i, null);
+			$base = $core->layer_paths[$i];
+			$this->crawl($base, '', $i, null);
+			$this->collectAutoloaders($base);
 		}
 		
-		$cache = $this->cache;
-		$this->cache = null;
-		return $cache;
+		$this->optimizeAutoloadMaps();
+		
+		return $this->cache;
 	}
 	
 	public function crawl ($base, $rel_path, $layer_num, $section)
@@ -75,13 +78,6 @@ class CoreCacheProvider
 			foreach ($dirs as $dir)
 			{
 				$this->crawl($base, "{$rel_path}/{$dir}", $layer_num, ($section === null ? $dir : $section));
-			}
-			
-			if ($section === null)
-			{
-				// Base directory of the layer.
-				
-				$this->collectAutoloaders($base);
 			}
 		}
 	}
@@ -195,6 +191,49 @@ class CoreCacheProvider
 			{
 				$this->cache['autoload'][$level][$type] += $map;
 			}
+		}
+	}
+	
+	public function optimizeAutoloadMaps ()
+	{
+		// If Clascade's autoloader checks all of the cached
+		// autoload maps and still can't find the requested
+		// class, it will try looking at the "effective path"
+		// location. If a class can be found there and isn't
+		// followed by other Composer autoload types, then we
+		// can safely remove it from the autoload cache array
+		// and still have cache-accelerated lookup performance.
+		
+		$level = array_last_key($this->cache['autoload']);
+		
+		if (count($this->cache['autoload'][$level]) == 1 && isset ($this->cache['autoload'][$level]['classmap']))
+		{
+			$map = [];
+			
+			foreach ($this->cache['autoload'][$level]['classmap'] as $class_name => $path)
+			{
+				if ($path != path('/classes/'.str_replace('\\', '/', $class_name).'.php'))
+				{
+					$map[] = $path;
+				}
+			}
+			
+			if (empty ($map))
+			{
+				array_pop($this->cache['autoload']);
+			}
+			else
+			{
+				$this->cache['autoload'][$level]['classmap'] = $map;
+			}
+		}
+		elseif (empty ($this->cache['autoload'][$level]))
+		{
+			// Either there are no autoload rules defined or
+			// the last rules were non-classmap rules.
+			// Remove the empty autoload level at the end.
+			
+			array_pop($this->cache['autoload']);
 		}
 	}
 }
