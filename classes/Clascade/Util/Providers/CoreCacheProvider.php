@@ -5,9 +5,11 @@ use Clascade\Core;
 
 class CoreCacheProvider
 {
-	public function findCachablePaths ()
+	public $cache;
+	
+	public function genCache ()
 	{
-		$cache =
+		$this->cache =
 		[
 			'effective-paths' => [],
 			'controller-wildcards' => [],
@@ -20,19 +22,18 @@ class CoreCacheProvider
 		
 		for ($i = count($core->layer_paths) - 1; $i >= 0; --$i)
 		{
-			$this->collectCachablePaths($core->layer_paths[$i], '', $cache, $i);
+			$this->crawl($core->layer_paths[$i], '', $i, null);
 		}
 		
+		$cache = $this->cache;
+		$this->cache = null;
 		return $cache;
 	}
 	
-	public function collectCachablePaths ($base, $rel_path, &$cache, $layer_num=null, $section=null)
+	public function crawl ($base, $rel_path, $layer_num, $section)
 	{
 		$dirs = [];
-		$conf_files = [];
-		$classes = [];
-		$autoload_level = count($cache['autoload']) - 1;
-		$d = opendir("{$base}{$rel_path}");
+		$d = opendir($base.$rel_path);
 		
 		if ($d !== false)
 		{
@@ -40,9 +41,9 @@ class CoreCacheProvider
 			{
 				if (substr($filename, 0, 1) != '.')
 				{
-					if ($layer_num != 0 && !isset ($cache['effective-paths']["{$rel_path}/{$filename}"]))
+					if ($layer_num != 0 && !isset ($this->cache['effective-paths']["{$rel_path}/{$filename}"]))
 					{
-						$cache['effective-paths']["{$rel_path}/{$filename}"] = "{$base}{$rel_path}/{$filename}";
+						$this->cache['effective-paths']["{$rel_path}/{$filename}"] = "{$base}{$rel_path}/{$filename}";
 					}
 					
 					if (is_dir("{$base}{$rel_path}/{$filename}"))
@@ -57,147 +58,142 @@ class CoreCacheProvider
 							// This could be a wildcard directory
 							// for controller routing.
 							
-							$cache['controller-wildcards']["{$base}{$rel_path}"]["{$base}{$rel_path}/{$filename}"] = 1;
+							$this->cache['controller-wildcards'][$base.$rel_path]["{$base}{$rel_path}/{$filename}"] = 1;
 						}
 					}
 					else
 					{
-						switch ($section)
-						{
-						case 'classes':
-							if (ends_with($filename, '.php'))
-							{
-								$class_name = substr("{$rel_path}/{$filename}", 9, -4);
-								$class_name = str_replace('/', '\\', $class_name);
-								$classes[$class_name] = "{$base}{$rel_path}/{$filename}";
-							}
-							break;
-						
-						case 'conf':
-						case 'lang':
-							$pos = strrpos($filename, '.');
-							
-							if ($pos !== false)
-							{
-								$extension = substr($filename, $pos + 1);
-								
-								if ($extension == 'json' || $extension == 'php')
-								{
-									$conf_name = "{$rel_path}/".substr($filename, 0, $pos);
-									
-									// Remove first path component (/conf/ or /lang/).
-									
-									$conf_name = substr($conf_name, strpos($conf_name, '/', 1) + 1);
-									
-									if ($extension == 'json' || !isset ($conf_files[$conf_name]))
-									{
-										if ($section == 'conf')
-										{
-											$conf_files[$conf_name] = ["{$base}{$rel_path}/{$filename}", $extension];
-										}
-										else
-										{
-											$conf_files[$conf_name] = "{$base}{$rel_path}/{$filename}";
-										}
-									}
-								}
-							}
-							
-							break;
-						}
+						$this->collectFile($section, $base, $rel_path, $filename);
 					}
 				}
 			}
 			
 			closedir($d);
 			
-			switch ($section)
-			{
-			case 'classes':
-				if (!empty ($classes))
-				{
-					if (!isset ($cache['autoload'][$autoload_level]['classmap']))
-					{
-						$cache['autoload'][$autoload_level]['classmap'] = $classes;
-					}
-					else
-					{
-						$cache['autoload'][$autoload_level]['classmap'] += $classes;
-					}
-				}
-				break;
-			
-			case 'conf':
-			case 'lang':
-				foreach ($conf_files as $conf_name => $conf_file)
-				{
-					if (!isset ($cache["{$section}-files"][$conf_name]))
-					{
-						$cache["{$section}-files"][$conf_name] = [$conf_file];
-					}
-					else
-					{
-						array_unshift($cache["{$section}-files"][$conf_name], $conf_file);
-					}
-				}
-				
-				break;
-			}
-			
 			// Recurse into subdirectories.
 			
 			foreach ($dirs as $dir)
 			{
-				$this->collectCachablePaths($base, "{$rel_path}/{$dir}", $cache, $layer_num, ($section === null ? $dir : $section));
+				$this->crawl($base, "{$rel_path}/{$dir}", $layer_num, ($section === null ? $dir : $section));
 			}
 			
 			if ($section === null)
 			{
 				// Base directory of the layer.
 				
-				if (!isset ($cache['autoloader-path']) && file_exists("{$base}/classes/Composer/Autoload/ClassLoader.php"))
-				{
-					$cache['autoloader-path'] = "{$base}/classes/Composer/Autoload/ClassLoader.php";
-				}
+				$this->collectAutoloaders($base);
+			}
+		}
+	}
+	
+	public function collectFile ($section, $base, $rel_path, $filename)
+	{
+		switch ($section)
+		{
+		case 'classes':
+			if (ends_with($filename, '.php'))
+			{
+				$class_name = "{$rel_path}/".substr($filename, 0, -4);
 				
-				if (file_exists("{$base}/vendor/autoload.php"))
+				// Remove first path component (/classes/).
+				
+				$class_name = substr($class_name, strpos($class_name, '/', 1) + 1);
+				
+				$class_name = str_replace('/', '\\', $class_name);
+				$this->addAutoloadMap('classmap', [$class_name => "{$base}{$rel_path}/{$filename}"]);
+			}
+			
+			break;
+		
+		case 'conf':
+		case 'lang':
+			$pos = strrpos($filename, '.');
+			
+			if ($pos !== false)
+			{
+				$extension = substr($filename, $pos + 1);
+				
+				if ($extension == 'json' || ($section == 'conf' && $extension == 'php'))
 				{
-					if (!isset ($cache['autoloader-path']))
-					{
-						$cache['autoloader-path'] = "{$base}/vendor/composer/ClassLoader.php";
-					}
+					$conf_name = "{$rel_path}/".substr($filename, 0, $pos);
 					
-					$maps = ['classmap', 'psr4', 'namespaces', 'files'];
+					// Remove first path component (/conf/ or /lang/).
 					
-					foreach ($maps as $key)
+					$conf_name = substr($conf_name, strpos($conf_name, '/', 1) + 1);
+					
+					if ($extension == 'json' || !file_exists("{$base}/{$section}/{$conf_name}.json"))
 					{
-						$path = "{$base}/vendor/composer/autoload_{$key}.php";
+						$entry = "{$base}{$rel_path}/{$filename}";
 						
-						if (file_exists($path))
+						if ($section == 'conf')
 						{
-							$map = require ($path);
-							
-							if (!empty ($map))
-							{
-								if (!isset ($cache['autoload'][$autoload_level][$key]))
-								{
-									$cache['autoload'][$autoload_level][$key] = $map;
-								}
-								else
-								{
-									$cache['autoload'][$autoload_level][$key] += $map;
-								}
-							}
+							$entry = [$entry, $extension];
+						}
+						
+						if (!isset ($this->cache["{$section}-files"][$conf_name]))
+						{
+							$this->cache["{$section}-files"][$conf_name] = [$entry];
+						}
+						else
+						{
+							array_unshift($this->cache["{$section}-files"][$conf_name], $entry);
 						}
 					}
-					
-					$maps = $cache['autoload'][$autoload_level];
-					
-					if (!empty ($maps) && (count($maps) > 1 || !isset ($maps['classmap'])))
-					{
-						$cache['autoload'][] = [];
-					}
 				}
+			}
+			
+			break;
+		}
+	}
+	
+	public function collectAutoloaders ($base)
+	{
+		if (!isset ($this->cache['autoloader-path']) && file_exists("{$base}/classes/Composer/Autoload/ClassLoader.php"))
+		{
+			$this->cache['autoloader-path'] = "{$base}/classes/Composer/Autoload/ClassLoader.php";
+		}
+		
+		if (file_exists("{$base}/vendor/autoload.php"))
+		{
+			if (!isset ($this->cache['autoloader-path']))
+			{
+				$this->cache['autoloader-path'] = "{$base}/vendor/composer/ClassLoader.php";
+			}
+			
+			$maps = ['classmap', 'psr4', 'namespaces', 'files'];
+			
+			foreach ($maps as $type)
+			{
+				$path = "{$base}/vendor/composer/autoload_{$type}.php";
+				
+				if (file_exists($path))
+				{
+					$this->addAutoloadMap($type, require ($path));
+				}
+			}
+			
+			$maps = $this->cache['autoload'][count($this->cache['autoload']) - 1];
+			
+			if (!empty ($maps) && (count($maps) > 1 || !isset ($maps['classmap'])))
+			{
+				$this->cache['autoload'][] = [];
+			}
+		}
+	}
+	
+	public function addAutoloadMap ($type, $map)
+	{
+		if (!empty ($map))
+		{
+			$level = count($this->cache['autoload']) - 1;
+			
+			if (!isset ($this->cache['autoload'][$level][$type]))
+			{
+				$this->cache['autoload'][$level][$type] = $map;
+			}
+			else
+			{
+				$this->cache['autoload'][$level][$type] += $map;
 			}
 		}
 	}
