@@ -71,7 +71,14 @@ class Lang
 			$lang = static::currentLang();
 		}
 		
-		list ($lang_pack, $message_key) = explode('.', $message_key, 2);
+		$message_key = explode('.', $message_key, 2);
+		
+		if (count($message_key) < 2)
+		{
+			return null;
+		}
+		
+		list ($lang_pack, $message_key) = $message_key;
 		$translations = static::getPack("{$lang}/{$lang_pack}");
 		
 		while ($translations === null || !isset ($translations[$message_key]))
