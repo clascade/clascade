@@ -172,44 +172,59 @@ class ConfProvider
 	
 	public function getFromCache (&$cache, $rel_path)
 	{
-		$conf = false;
-		
 		if (isset ($cache[$rel_path]))
 		{
-			foreach ($cache[$rel_path] as $conf_file)
+			$conf_files = $cache[$rel_path];
+		}
+		else
+		{
+			$path = path("/conf/{$rel_path}.json");
+			
+			if (file_exists($path))
 			{
-				switch ($conf_file[1])
+				$conf_files = [$path];
+			}
+			else
+			{
+				return false;
+			}
+		}
+		
+		$conf = false;
+		
+		foreach ($conf_files as $conf_file)
+		{
+			switch (strrchr($conf_file, '.'))
+			{
+			case '.json':
+				$layer_conf = json_decode(file_get_contents($conf_file), true);
+				
+				if (json_last_error() !== \JSON_ERROR_NONE)
 				{
-				case 'json':
-					$layer_conf = json_decode(file_get_contents($conf_file[0]), true);
-					
-					if (json_last_error() !== \JSON_ERROR_NONE)
-					{
-						throw new Exception\ConfigurationException("Error parsing {$conf_file[0]}: ".json_last_error_msg());
-					}
-					
-					break;
-				
-				case 'php':
-					$layer_conf = include ($conf_file[0]);
-					break;
-				
-				default:
-					$layer_conf = false;
-					break;
+					throw new Exception\ConfigurationException("Error parsing {$conf_file}: ".json_last_error_msg());
 				}
 				
-				if ($layer_conf !== false)
+				break;
+			
+			case '.php':
+				$layer_conf = include ($conf_file);
+				break;
+			
+			default:
+				$layer_conf = false;
+				break;
+			}
+			
+			if ($layer_conf !== false)
+			{
+				if ($conf === false)
 				{
-					if ($conf === false)
-					{
-						$conf = [];
-					}
-					
-					foreach ($layer_conf as $key => $value)
-					{
-						array_set($conf, $key, $value);
-					}
+					$conf = [];
+				}
+				
+				foreach ($layer_conf as $key => $value)
+				{
+					array_set($conf, $key, $value);
 				}
 			}
 		}

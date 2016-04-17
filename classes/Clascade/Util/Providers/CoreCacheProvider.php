@@ -28,6 +28,7 @@ class CoreCacheProvider
 			$this->collectAutoloaders($base);
 		}
 		
+		$this->optimizeConf();
 		$this->optimizeAutoloadMaps();
 		
 		return $this->cache;
@@ -119,20 +120,15 @@ class CoreCacheProvider
 					
 					if ($extension == 'json' || !file_exists("{$base}/{$section}/{$conf_name}.json"))
 					{
-						$entry = "{$base}{$rel_path}/{$filename}";
-						
-						if ($section == 'conf')
-						{
-							$entry = [$entry, $extension];
-						}
+						$path = "{$base}{$rel_path}/{$filename}";
 						
 						if (!isset ($this->cache["{$section}-files"][$conf_name]))
 						{
-							$this->cache["{$section}-files"][$conf_name] = [$entry];
+							$this->cache["{$section}-files"][$conf_name] = [$path];
 						}
 						else
 						{
-							array_unshift($this->cache["{$section}-files"][$conf_name], $entry);
+							array_unshift($this->cache["{$section}-files"][$conf_name], $path);
 						}
 					}
 				}
@@ -191,6 +187,30 @@ class CoreCacheProvider
 			{
 				$this->cache['autoload'][$level][$type] += $map;
 			}
+		}
+	}
+	
+	public function optimizeConf ()
+	{
+		// If a requested conf/lang file isn't found in the
+		// cache, Clascade will attempt it find one instance at
+		// the effective path, with a .json extension. In cases
+		// where these would yield the same result, we don't
+		// need to keep the entry in the conf/lang cache.
+		
+		foreach (['conf', 'lang'] as $type)
+		{
+			$conf = [];
+			
+			foreach ($this->cache["{$type}-files"] as $conf_name => $paths)
+			{
+				if (count($paths) > 1 || (count($paths) == 1 && substr($paths[0], -5) != '.json'))
+				{
+					$conf[$conf_name] = $paths;
+				}
+			}
+			
+			$this->cache["{$type}-files"] = $conf;
 		}
 	}
 	

@@ -48,22 +48,37 @@ class PackProvider
 	
 	public function getFromCache (&$cache, $rel_path)
 	{
-		$lang = false;
-		
 		if (isset ($cache[$rel_path]))
 		{
-			foreach ($cache[$rel_path] as $lang_file)
+			$lang_files = $cache[$rel_path];
+		}
+		else
+		{
+			$path = path("/lang/{$rel_path}.json");
+			
+			if (file_exists($path))
 			{
-				$layer_lang = json_decode(file_get_contents($lang_file), true);
-				
-				if ($lang === false)
-				{
-					$lang = $layer_lang;
-				}
-				elseif ($layer_lang !== false)
-				{
-					$lang = array_merge($lang, $layer_lang);
-				}
+				$lang_files = [$path];
+			}
+			else
+			{
+				return false;
+			}
+		}
+		
+		$lang = false;
+		
+		foreach ($lang_files as $lang_file)
+		{
+			$layer_lang = json_decode(file_get_contents($lang_file), true);
+			
+			if ($lang === false)
+			{
+				$lang = $layer_lang;
+			}
+			elseif ($layer_lang !== false)
+			{
+				$lang = array_merge($lang, $layer_lang);
 			}
 		}
 		
